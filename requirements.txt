@@ -1,0 +1,14 @@
+numpy==2.0.2
+pandas==2.2.2
+scikit-learn==1.6.1
+xgboost==3.2.0
+geopy==2.4.1
+requests==2.32.4
+earthengine-api==1.7.21
+folium==0.20.0
+shap==0.51.0
+streamlit==1.44.0
+streamlit-folium==0.27.1
+openpyxl
+matplotlib
+    
