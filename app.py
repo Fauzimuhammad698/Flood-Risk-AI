@@ -35,9 +35,9 @@ except Exception as e:
 try:
     import shap
     SHAP_AVAILABLE = True
-except ImportError:
+except Exception:
     SHAP_AVAILABLE = False
-    print("[WARN] SHAP not available. Install with: pip install shap")
+    print("[WARN] SHAP not available or incompatible. Skipping SHAP features.")
 
 # Page configuration
 st.set_page_config(
