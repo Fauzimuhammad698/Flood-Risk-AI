@@ -161,93 +161,129 @@ st.markdown("""
 if 'current_time' not in st.session_state:
     st.session_state.current_time = datetime.now()
 
-# --- GEE INITIALIZATION - WAJIB UNTUK REALTIME ---
+# --- GEE INITIALIZATION - PRODUCTION READY ---
 GEE_ENABLED = False
 
 if not GEE_AVAILABLE:
     st.error("❌ GEE library tidak tersedia. Mode real-time memerlukan GEE.")
     st.stop()
 
-try:
-    # Coba Service Account dari Streamlit Secrets
-    if 'gee' in st.secrets:
-        import json
-        import base64
-        from google.oauth2 import service_account
+def initialize_gee():
+    """Initialize GEE with multiple auth strategies for production deployment"""
+    global GEE_ENABLED
+    
+    try:
+        # Coba Service Account dari Streamlit Secrets
+        if 'gee' in st.secrets:
+            import json
+            from google.oauth2 import service_account
+            
+            credentials = None
+            errors = []
+            
+            # STRATEGY 1: Complete JSON key as single string (RECOMMENDED)
+            if 'json_key' in st.secrets["gee"]:
+                try:
+                    print("[GEE] Strategy 1: Parsing complete JSON key...")
+                    json_str = st.secrets["gee"]["json_key"]
+                    
+                    # Handle both raw JSON and escaped JSON
+                    if json_str.startswith('{'):
+                        gee_key = json.loads(json_str)
+                    else:
+                        # If it's a Python string representation, eval it safely
+                        import ast
+                        gee_key = ast.literal_eval(json_str)
+                    
+                    credentials = service_account.Credentials.from_service_account_info(
+                        gee_key,
+                        scopes=['https://www.googleapis.com/auth/earthengine.readonly']
+                    )
+                    print("[GEE] ✓ JSON key strategy successful")
+                    
+                except Exception as e:
+                    errors.append(f"JSON key: {str(e)[:100]}")
+                    print(f"[GEE] ✗ JSON key failed: {e}")
+            
+            # STRATEGY 2: Base64 encoded JSON (for complex keys)
+            if not credentials and 'json_key_b64' in st.secrets["gee"]:
+                try:
+                    print("[GEE] Strategy 2: Decoding Base64 JSON key...")
+                    import base64
+                    decoded = base64.b64decode(st.secrets["gee"]["json_key_b64"]).decode('utf-8')
+                    gee_key = json.loads(decoded)
+                    
+                    credentials = service_account.Credentials.from_service_account_info(
+                        gee_key,
+                        scopes=['https://www.googleapis.com/auth/earthengine.readonly']
+                    )
+                    print("[GEE] ✓ Base64 strategy successful")
+                    
+                except Exception as e:
+                    errors.append(f"Base64: {str(e)[:100]}")
+                    print(f"[GEE] ✗ Base64 failed: {e}")
+            
+            # STRATEGY 3: Individual fields (legacy support)
+            if not credentials and all(k in st.secrets["gee"] for k in ["service_account_email", "private_key"]):
+                try:
+                    print("[GEE] Strategy 3: Using individual fields...")
+                    private_key = st.secrets["gee"]["private_key"]
+                    
+                    # Fix TOML newline issues
+                    if isinstance(private_key, str):
+                        # Replace escaped newlines with actual newlines
+                        private_key = private_key.replace('\\n', '\n')
+                        # Ensure proper PEM format
+                        if not private_key.startswith('-----BEGIN PRIVATE KEY-----'):
+                            raise ValueError("Private key format invalid")
+                    
+                    gee_key = {
+                        "type": "service_account",
+                        "project_id": st.secrets["gee"].get("project_id", "deteksi-banjir-492803"),
+                        "private_key_id": st.secrets["gee"].get("private_key_id", ""),
+                        "private_key": private_key,
+                        "client_email": st.secrets["gee"]["service_account_email"],
+                        "client_id": st.secrets["gee"].get("client_id", ""),
+                        "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                        "token_uri": "https://oauth2.googleapis.com/token",
+                    }
+                    
+                    credentials = service_account.Credentials.from_service_account_info(
+                        gee_key,
+                        scopes=['https://www.googleapis.com/auth/earthengine.readonly']
+                    )
+                    print("[GEE] ✓ Individual fields strategy successful")
+                    
+                except Exception as e:
+                    errors.append(f"Fields: {str(e)[:100]}")
+                    print(f"[GEE] ✗ Individual fields failed: {e}")
+            
+            if credentials:
+                ee.Initialize(credentials, project='deteksi-banjir-492803')
+                GEE_ENABLED = True
+                st.success("✅ GEE Real-time Connected via Service Account")
+                return True
+            else:
+                raise Exception(f"All auth strategies failed: {'; '.join(errors)}")
         
-        # Try multiple approaches for GEE authentication
-        credentials = None
-        
-        # APPROACH 1: Base64 encoded JSON key (most reliable for TOML)
-        if 'json_key_b64' in st.secrets["gee"]:
-            try:
-                print("[GEE] Trying Base64 approach...")
-                decoded_json = base64.b64decode(st.secrets["gee"]["json_key_b64"]).decode('utf-8')
-                gee_key = json.loads(decoded_json)
-                credentials = service_account.Credentials.from_service_account_info(
-                    gee_key,
-                    scopes=['https://www.googleapis.com/auth/earthengine.readonly']
-                )
-                print("[GEE] Base64 approach successful")
-            except Exception as e:
-                print(f"[GEE] Base64 approach failed: {e}")
-        
-        # APPROACH 2: Raw JSON key string
-        elif 'json_key' in st.secrets["gee"]:
-            try:
-                print("[GEE] Trying JSON string approach...")
-                gee_key = json.loads(st.secrets["gee"]["json_key"])
-                credentials = service_account.Credentials.from_service_account_info(
-                    gee_key,
-                    scopes=['https://www.googleapis.com/auth/earthengine.readonly']
-                )
-                print("[GEE] JSON string approach successful")
-            except Exception as e:
-                print(f"[GEE] JSON string approach failed: {e}")
-        
-        # APPROACH 3: Individual fields (with private key fix)
         else:
-            try:
-                print("[GEE] Trying individual fields approach...")
-                private_key = st.secrets["gee"]["private_key"]
-                # Fix common TOML private key issues
-                if isinstance(private_key, str):
-                    # Ensure proper newlines
-                    private_key = private_key.replace('\\n', '\n')
-                
-                gee_key = {
-                    "type": "service_account",
-                    "project_id": "deteksi-banjir-492803",
-                    "private_key_id": st.secrets["gee"].get("private_key_id", ""),
-                    "private_key": private_key,
-                    "client_email": st.secrets["gee"]["service_account_email"],
-                    "client_id": st.secrets["gee"].get("client_id", ""),
-                    "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                    "token_uri": "https://oauth2.googleapis.com/token",
-                }
-                credentials = service_account.Credentials.from_service_account_info(
-                    gee_key,
-                    scopes=['https://www.googleapis.com/auth/earthengine.readonly']
-                )
-                print("[GEE] Individual fields approach successful")
-            except Exception as e:
-                print(f"[GEE] Individual fields approach failed: {e}")
-        
-        if credentials:
-            ee.Initialize(credentials, project='deteksi-banjir-492803')
+            # Local development mode
+            print("[GEE] No secrets found, using local auth...")
+            ee.Initialize(project='deteksi-banjir-492803')
             GEE_ENABLED = True
-            st.success("✅ GEE Real-time Connected via Service Account")
-    else:
-        # Local development - pakai default (hanya untuk local)
-        ee.Initialize(project='deteksi-banjir-492803')
-        GEE_ENABLED = True
-        st.info("✅ GEE Real-time Connected (Local Mode)")
-        
-except Exception as e:
-    st.error(f"❌ GEE initialization gagal: {e}")
-    st.error("📋 Cek: 1) Service Account Key sudah diisi di Secrets, 2) Email sudah di-add ke GEE ACL")
-    st.error("💡 Tips: Gunakan Base64 approach: https://base64.io/, paste file JSON key dan masukkan hasil ke secrets")
-    st.stop()  # STOP aplikasi jika GEE gagal
+            st.info("✅ GEE Local Mode Active")
+            return True
+            
+    except Exception as e:
+        st.error(f"❌ GEE initialization gagal: {e}")
+        st.error("📋 Production Checklist:")
+        st.error("   1. Service Account email ditambah ke GEE ACL")
+        st.error("   2. Secrets format: json_key = '{...}' (single line)")
+        st.error("   3. Private key memiliki \\n bukan newline actual")
+        st.stop()
+
+# Initialize GEE
+initialize_gee()
 
 # --- LOAD ASSETS ---
 @st.cache_resource
