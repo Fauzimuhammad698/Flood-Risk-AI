@@ -8,7 +8,6 @@ import numpy as np
 import pandas as pd
 import pickle
 import requests
-import ee
 import folium
 from folium.plugins import MarkerCluster
 from streamlit_folium import st_folium
@@ -18,6 +17,19 @@ import time
 import matplotlib.pyplot as plt
 import warnings
 warnings.filterwarnings('ignore')
+
+# --- GEE IMPORT - WAJIB UNTUK REALTIME ---
+try:
+    import ee
+    GEE_AVAILABLE = True
+except ImportError as e:
+    GEE_AVAILABLE = False
+    st.error("❌ earthengine-api gagal diinstall. GEE wajib untuk mode real-time.")
+    st.stop()
+except Exception as e:
+    GEE_AVAILABLE = False
+    st.error(f"❌ GEE import error: {e}")
+    st.stop()
 
 # Try to import SHAP for explanation
 try:
@@ -149,14 +161,42 @@ st.markdown("""
 if 'current_time' not in st.session_state:
     st.session_state.current_time = datetime.now()
 
-# --- GEE INITIALIZATION ---
+# --- GEE INITIALIZATION - WAJIB UNTUK REALTIME ---
+GEE_ENABLED = False
+
+if not GEE_AVAILABLE:
+    st.error("❌ GEE library tidak tersedia. Mode real-time memerlukan GEE.")
+    st.stop()
+
 try:
-    ee.Initialize(project='deteksi-banjir-492803')
-    GEE_ENABLED = True
-    print("[OK] Google Earth Engine initialized successfully")
+    # Coba Service Account dari Streamlit Secrets
+    if 'gee' in st.secrets:
+        from oauth2client.service_account import ServiceAccountCredentials
+        
+        credentials = ServiceAccountCredentials.from_json_keyfile_dict(
+            {
+                "type": "service_account",
+                "project_id": "deteksi-banjir-492803",
+                "private_key": st.secrets["gee"]["private_key"],
+                "client_email": st.secrets["gee"]["service_account_email"],
+                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+                "token_uri": "https://oauth2.googleapis.com/token",
+            },
+            scopes=['https://www.googleapis.com/auth/earthengine.readonly']
+        )
+        ee.Initialize(credentials)
+        GEE_ENABLED = True
+        st.success("✅ GEE Real-time Connected via Service Account")
+    else:
+        # Local development - pakai default (hanya untuk local)
+        ee.Initialize(project='deteksi-banjir-492803')
+        GEE_ENABLED = True
+        st.info("✅ GEE Real-time Connected (Local Mode)")
+        
 except Exception as e:
-    GEE_ENABLED = False
-    print(f"[WARN] GEE initialization failed: {e}")
+    st.error(f"❌ GEE initialization gagal: {e}")
+    st.error("📋 Cek: 1) Service Account Key sudah diisi di Secrets, 2) Email sudah di-add ke GEE ACL")
+    st.stop()  # STOP aplikasi jika GEE gagal
 
 # --- LOAD ASSETS ---
 @st.cache_resource
@@ -423,58 +463,58 @@ def get_openmeteo_weather(lat, lon):
 
 def get_gee_data(lat, lon):
     """
-    Get spatial data from Google Earth Engine
-    Returns: slope, ndvi, land_cover
+    Get spatial data from Google Earth Engine - REALTIME ONLY
+    Raises exception if failed (no fallback)
     """
-    try:
-        if not GEE_ENABLED:
-            raise Exception("GEE not initialized")
-        
-        point = ee.Geometry.Point([lon, lat])
-        
-        # 1. SLOPE from SRTM
-        srtm = ee.Image('USGS/SRTMGL1_003')
-        slope = ee.Terrain.slope(srtm)
-        slope_value = slope.sample(point, 30).first().get('slope').getInfo()
-        
-        # 2. NDVI from Sentinel-2 (last 6 months median)
-        end_date = datetime.now().strftime('%Y-%m-%d')
-        start_date = (datetime.now() - timedelta(days=180)).strftime('%Y-%m-%d')
-        
-        sentinel2 = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED') \
-            .filterBounds(point) \
-            .filterDate(start_date, end_date) \
-            .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20)) \
-            .median()
-        
-        ndvi = sentinel2.normalizedDifference(['B8', 'B4']).rename('NDVI')
-        ndvi_value = ndvi.sample(point, 30).first().get('NDVI').getInfo()
-        
-        # 3. LAND COVER from ESA WorldCover 2021
-        worldcover = ee.Image('ESA/WorldCover/v200/2021')
-        land_cover_code = worldcover.sample(point, 10).first().get('Map').getInfo()
-        
-        land_cover_mapping = {
-            10: 'Forest', 20: 'Forest', 30: 'Agri', 40: 'Agri',
-            50: 'Urban', 60: 'Barren', 70: 'Snow', 80: 'Water',
-            90: 'Wetland', 95: 'Mangrove', 100: 'Moss'
-        }
-        land_cover = land_cover_mapping.get(land_cover_code, 'Urban')
-        
-        return {
-            'slope': float(slope_value) if slope_value else 5.0,
-            'ndvi': float(ndvi_value) if ndvi_value else 0.5,
-            'land_cover': land_cover,
-            'source': 'GEE'
-        }
-    except Exception as e:
-        print(f"GEE Error: {e}")
-        return {
-            'slope': 5.0,
-            'ndvi': 0.5,
-            'land_cover': 'Urban',
-            'source': 'Fallback'
-        }
+    if not GEE_ENABLED:
+        raise Exception("GEE tidak terinisialisasi. Real-time mode memerlukan GEE.")
+    
+    point = ee.Geometry.Point([lon, lat])
+    
+    # 1. SLOPE from SRTM
+    srtm = ee.Image('USGS/SRTMGL1_003')
+    slope = ee.Terrain.slope(srtm)
+    slope_value = slope.sample(point, 30).first().get('slope').getInfo()
+    
+    if slope_value is None:
+        raise Exception("GEE: Gagal mengambil data slope")
+    
+    # 2. NDVI from Sentinel-2
+    end_date = datetime.now().strftime('%Y-%m-%d')
+    start_date = (datetime.now() - timedelta(days=180)).strftime('%Y-%m-%d')
+    
+    sentinel2 = ee.ImageCollection('COPERNICUS/S2_SR_HARMONIZED') \
+        .filterBounds(point) \
+        .filterDate(start_date, end_date) \
+        .filter(ee.Filter.lt('CLOUDY_PIXEL_PERCENTAGE', 20)) \
+        .median()
+    
+    ndvi = sentinel2.normalizedDifference(['B8', 'B4']).rename('NDVI')
+    ndvi_value = ndvi.sample(point, 30).first().get('NDVI').getInfo()
+    
+    if ndvi_value is None:
+        raise Exception("GEE: Gagal mengambil data NDVI")
+    
+    # 3. LAND COVER from ESA WorldCover
+    worldcover = ee.Image('ESA/WorldCover/v200/2021')
+    land_cover_code = worldcover.sample(point, 10).first().get('Map').getInfo()
+    
+    if land_cover_code is None:
+        raise Exception("GEE: Gagal mengambil data Land Cover")
+    
+    land_cover_mapping = {
+        10: 'Forest', 20: 'Forest', 30: 'Agri', 40: 'Agri',
+        50: 'Urban', 60: 'Barren', 70: 'Snow', 80: 'Water',
+        90: 'Wetland', 95: 'Mangrove', 100: 'Moss'
+    }
+    land_cover = land_cover_mapping.get(land_cover_code, 'Urban')
+    
+    return {
+        'slope': float(slope_value),
+        'ndvi': float(ndvi_value),
+        'land_cover': land_cover,
+        'source': 'GEE-REALTIME'
+    }
 
 
 def fetch_comprehensive_data(lat, lon, adm4_code=None, location_name=None):

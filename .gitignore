@@ -1,6 +1,7 @@
 .venv/
 __pycache__/
 *.pyc
-*.pkl
+# *.pkl  # Dihapus agar model bisa diupload ke Streamlit Cloud
 *.csv
 .vscode/
+.streamlit/secrets.toml
