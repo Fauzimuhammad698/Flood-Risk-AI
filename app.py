@@ -171,9 +171,9 @@ if not GEE_AVAILABLE:
 try:
     # Coba Service Account dari Streamlit Secrets
     if 'gee' in st.secrets:
-        from oauth2client.service_account import ServiceAccountCredentials
+        from google.oauth2 import service_account
         
-        credentials = ServiceAccountCredentials.from_json_keyfile_dict(
+        credentials = service_account.Credentials.from_service_account_info(
             {
                 "type": "service_account",
                 "project_id": "deteksi-banjir-492803",
