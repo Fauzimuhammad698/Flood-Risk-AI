@@ -234,11 +234,9 @@ try:
                 print(f"[GEE] Individual fields approach failed: {e}")
         
         if credentials:
-            ee.Initialize(credentials)
+            ee.Initialize(credentials, project='deteksi-banjir-492803')
             GEE_ENABLED = True
             st.success("✅ GEE Real-time Connected via Service Account")
-        else:
-            raise Exception("All GEE authentication approaches failed")
     else:
         # Local development - pakai default (hanya untuk local)
         ee.Initialize(project='deteksi-banjir-492803')
