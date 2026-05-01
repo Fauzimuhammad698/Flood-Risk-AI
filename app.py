@@ -796,6 +796,64 @@ def get_risk_level(prob):
         return "Tinggi", "high", "🚨", "#ef4444", "red"
 
 
+def show_simplified_explanation(raw_data, st):
+    """Show simplified explanation when SHAP is not available"""
+    st.markdown("### 🤖 Analisis AI (Mode Sederhana)")
+    
+    explanations = []
+    
+    # Rainfall analysis
+    if raw_data['rainfall_curr'] > 80:
+        explanations.append("🌧️ **Curah hujan ekstrem** saat ini membebani sistem drainase")
+    elif raw_data['rainfall_curr'] > 50:
+        explanations.append("🌧️ **Curah hujan tinggi**, perlu waspada genangan")
+    
+    if raw_data['rainfall_7d'] > 300:
+        explanations.append("📊 **Akumulasi hujan 7 hari** tinggi - tanah jenuh")
+    elif raw_data['rainfall_3d'] > 150:
+        explanations.append("📊 **Hujan 3 hari** berturut-turut meningkatkan risiko")
+    
+    # Terrain analysis
+    if raw_data['slope'] < 5:
+        explanations.append("⛰️ **Lereng datar** - air mudah menggenang")
+    elif raw_data['slope'] > 20:
+        explanations.append("⛰️ **Lereng curam** - aliran air cepat")
+    
+    # NDVI analysis
+    if raw_data['ndvi'] < 0.3:
+        explanations.append("🌿 **Vegetasi jarang** - infiltrasi rendah")
+    elif raw_data['ndvi'] > 0.7:
+        explanations.append("🌿 **Vegetasi padat** - membantu serap air")
+    
+    # Land cover analysis
+    if raw_data['land_cover'] == 'Urban':
+        explanations.append("🏙️ **Area perkotaan** - permukaan kedap air")
+    elif raw_data['land_cover'] == 'Forest':
+        explanations.append("🌲 **Area hutan** - infiltrasi baik")
+    
+    # Elevation analysis
+    if raw_data['elevation'] < 10:
+        explanations.append("📍 **Elevasi rendah** - rentan banjir")
+    
+    # Display explanations
+    if explanations:
+        st.markdown("**Faktor-faktor yang mempengaruhi risiko:**")
+        for exp in explanations:
+            st.markdown(f"- {exp}")
+    else:
+        st.markdown("✅ **Kondisi cuaca dan geografis normal**")
+    
+    # Recommendations
+    st.markdown("\n**💡 Rekomendasi:**")
+    if raw_data['rainfall_curr'] > 50:
+        st.markdown("- Hindari area rendah dan dekat sungai")
+        st.markdown("- Siapkan perlindungan hujan")
+        st.markdown("- Pantau informasi cuaca terkini")
+    else:
+        st.markdown("- Kondisi aman untuk aktivitas luar ruangan")
+        st.markdown("- Tetap waspada terhadap perubahan cuaca")
+
+
 def generate_ai_explanation(raw_data, risk_level, top_features):
     """Generate AI explanation for the risk assessment"""
     explanations = []
