@@ -177,10 +177,14 @@ try:
             {
                 "type": "service_account",
                 "project_id": "deteksi-banjir-492803",
+                "private_key_id": st.secrets["gee"]["private_key_id"],
                 "private_key": st.secrets["gee"]["private_key"],
                 "client_email": st.secrets["gee"]["service_account_email"],
+                "client_id": st.secrets["gee"]["client_id"],
                 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
                 "token_uri": "https://oauth2.googleapis.com/token",
+                "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+                "client_x509_cert_url": f"https://www.googleapis.com/robot/v1/metadata/x509/{st.secrets['gee']['service_account_email']}",
             },
             scopes=['https://www.googleapis.com/auth/earthengine.readonly']
         )
