@@ -326,17 +326,27 @@ def format_waktu_indonesia(dt):
     return f"{hari}, {dt.day} {bulan} {dt.year} {dt.strftime('%H:%M')} WIB"
 
 
-def get_coordinates(location_name):
-    """Get coordinates from location name using Nominatim"""
-    try:
-        geolocator = Nominatim(user_agent="flood_risk_app_v2")
-        location = geolocator.geocode(location_name, timeout=10)
-        if location:
-            return location.latitude, location.longitude, location.address
-        return None, None, None
-    except Exception as e:
-        print(f"Geocoding error: {e}")
-        return None, None, None
+def get_coordinates(location_name, retries=3):
+    """Get coordinates from location name using ArcGIS (much more stable than Nominatim)"""
+    from geopy.geocoders import ArcGIS
+    
+    for attempt in range(retries):
+        try:
+            # Menggunakan ArcGIS yang jauh lebih cepat dan bebas limitasi error
+            geolocator = ArcGIS()
+            location = geolocator.geocode(location_name, timeout=10)
+            
+            if location:
+                return location.latitude, location.longitude, location.address
+                
+            return None, None, None
+            
+        except Exception as e:
+            print(f"Geocoding error (percobaan {attempt+1}/{retries}): {e}")
+            if attempt < retries - 1:
+                time.sleep(1)
+            else:
+                return None, None, None
 
 
 def get_bmkg_nowcast_alert(lat, lon, location_name=None):
