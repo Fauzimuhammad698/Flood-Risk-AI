@@ -327,8 +327,8 @@ def format_waktu_indonesia(dt):
 
 
 def get_coordinates(location_name, retries=3):
-    """Get coordinates from location name using ArcGIS and Nominatim fallback"""
-    from geopy.geocoders import ArcGIS, Nominatim
+    """Get coordinates from location name using ArcGIS, Photon, and Nominatim fallbacks"""
+    from geopy.geocoders import ArcGIS, Nominatim, Photon
     import time
     
     # Try ArcGIS first
@@ -336,33 +336,35 @@ def get_coordinates(location_name, retries=3):
         try:
             geolocator = ArcGIS(user_agent="flood_risk_ai_app_v2")
             location = geolocator.geocode(location_name, timeout=10)
-            
-            if location:
-                return location.latitude, location.longitude, location.address
-            
-            # If location is None, it didn't find it. Wait and retry.
+            if location: return location.latitude, location.longitude, location.address
             time.sleep(1)
         except Exception as e:
             print(f"ArcGIS error (percobaan {attempt+1}/{retries}): {e}")
-            if attempt < retries - 1:
-                time.sleep(1)
+            if attempt < retries - 1: time.sleep(1)
+
+    # Fallback 1: Photon (Komoot) - Sangat handal untuk server cloud
+    for attempt in range(retries):
+        try:
+            geolocator = Photon(user_agent="flood_risk_ai_app_v2")
+            search_query = location_name if "indonesia" in location_name.lower() else f"{location_name}, Indonesia"
+            location = geolocator.geocode(search_query, timeout=10)
+            if location: return location.latitude, location.longitude, location.address
+            time.sleep(1)
+        except Exception as e:
+            print(f"Photon error (percobaan {attempt+1}/{retries}): {e}")
+            if attempt < retries - 1: time.sleep(1)
                 
-    # Fallback to Nominatim
+    # Fallback 2: Nominatim
     for attempt in range(retries):
         try:
             geolocator = Nominatim(user_agent="flood_risk_ai_app_v2_fallback")
-            # For Indonesia, sometimes adding country helps if not specified
             search_query = location_name if "indonesia" in location_name.lower() else f"{location_name}, Indonesia"
             location = geolocator.geocode(search_query, timeout=10)
-            
-            if location:
-                return location.latitude, location.longitude, location.address
-                
+            if location: return location.latitude, location.longitude, location.address
             time.sleep(1)
         except Exception as e:
             print(f"Nominatim error (percobaan {attempt+1}/{retries}): {e}")
-            if attempt < retries - 1:
-                time.sleep(1)
+            if attempt < retries - 1: time.sleep(1)
                 
     return None, None, None
 
