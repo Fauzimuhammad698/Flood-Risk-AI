@@ -1028,7 +1028,7 @@ def create_folium_map(lat, lon, address, risk_level, risk_color):
     # Outer circle (moderate risk)
     folium.Circle(
         location=[lat, lon],
-        radius=2000,  # 2km
+        radius=20000,  # 2km
         popup='Zona Risiko Sedang',
         color=risk_color,
         fill=True,
