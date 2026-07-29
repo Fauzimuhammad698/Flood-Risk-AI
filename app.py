@@ -1100,16 +1100,28 @@ def create_folium_map(lat, lon, address, risk_level, risk_color):
         weight=3
     ).add_to(m)
     
-    # Outer circle (moderate risk)
+    # Middle circle (moderate risk - 2km radius)
     folium.Circle(
         location=[lat, lon],
-        radius=20000,  # 2km
-        popup='Zona Risiko Sedang',
+        radius=2000,  # 2km (Skala Mikro Lingkungan)
+        popup='Zona Risiko Sedang (Radius 2km)',
         color=risk_color,
         fill=True,
         fill_opacity=0.1,
         weight=2,
         dash_array='5, 10'  # Dashed line
+    ).add_to(m)
+    
+    # Outer circle (macro weather grid - 11km radius)
+    folium.Circle(
+        location=[lat, lon],
+        radius=11000,  # 11km (Skala Makro Open-Meteo)
+        popup='Batas Resolusi Cuaca Makro (11km)',
+        color='blue',  # Warna biru untuk merepresentasikan cuaca/langit
+        fill=False,
+        weight=1,
+        dash_array='10, 15',
+        tooltip='Batas Resolusi Satelit Cuaca (11km)'
     ).add_to(m)
     
     # Add mini map (overview) in corner
