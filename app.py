@@ -326,11 +326,86 @@ def format_waktu_indonesia(dt):
     return f"{hari}, {dt.day} {bulan} {dt.year} {dt.strftime('%H:%M')} WIB"
 
 
+CUSTOM_LOCATIONS = {
+    # DKI JAKARTA (Pusat Pemerintahan)
+    "jakarta timur": {"lat": -6.2146, "lon": 106.9012, "address": "Kantor Walikota Administrasi Jakarta Timur, DKI Jakarta"},
+    "jakarta selatan": {"lat": -6.2372, "lon": 106.8143, "address": "Kantor Walikota Administrasi Jakarta Selatan, DKI Jakarta"},
+    "jakarta barat": {"lat": -6.1866, "lon": 106.7490, "address": "Kantor Walikota Administrasi Jakarta Barat, DKI Jakarta"},
+    "jakarta utara": {"lat": -6.1197, "lon": 106.8924, "address": "Kantor Walikota Administrasi Jakarta Utara, DKI Jakarta"},
+    "jakarta pusat": {"lat": -6.1793, "lon": 106.8184, "address": "Kantor Walikota Administrasi Jakarta Pusat, DKI Jakarta"},
+    
+    # JABODETABEK LAINNYA
+    "bogor": {"lat": -6.5976, "lon": 106.7996, "address": "Balai Kota Bogor, Jawa Barat"},
+    "kota bogor": {"lat": -6.5976, "lon": 106.7996, "address": "Balai Kota Bogor, Jawa Barat"},
+    "kabupaten bogor": {"lat": -6.4716, "lon": 106.8378, "address": "Kantor Bupati Bogor, Cibinong, Jawa Barat"},
+    "depok": {"lat": -6.3957, "lon": 106.8227, "address": "Balai Kota Depok, Jawa Barat"},
+    "kota depok": {"lat": -6.3957, "lon": 106.8227, "address": "Balai Kota Depok, Jawa Barat"},
+    "tangerang": {"lat": -6.1702, "lon": 106.6403, "address": "Pusat Pemerintahan Kota Tangerang, Banten"},
+    "kota tangerang": {"lat": -6.1702, "lon": 106.6403, "address": "Pusat Pemerintahan Kota Tangerang, Banten"},
+    "tangerang selatan": {"lat": -6.2882, "lon": 106.7208, "address": "Kantor Walikota Tangerang Selatan, Banten"},
+    "bekasi": {"lat": -6.2335, "lon": 106.9942, "address": "Pusat Pemerintahan Kota Bekasi, Jawa Barat"},
+    "kota bekasi": {"lat": -6.2335, "lon": 106.9942, "address": "Pusat Pemerintahan Kota Bekasi, Jawa Barat"},
+    "kabupaten bekasi": {"lat": -6.3686, "lon": 107.1656, "address": "Kantor Bupati Bekasi, Cikarang Pusat, Jawa Barat"},
+
+    # 38 PROVINSI INDONESIA (Pusat Pemerintahan Provinsi)
+    "aceh": {"lat": 4.2264, "lon": 96.9104, "address": "Pusat Pemerintahan Provinsi Aceh"},
+    "sumatera utara": {"lat": 2.1901, "lon": 99.0553, "address": "Pusat Pemerintahan Provinsi Sumatera Utara"},
+    "sumatera barat": {"lat": -0.8528, "lon": 100.4653, "address": "Pusat Pemerintahan Provinsi Sumatera Barat"},
+    "riau": {"lat": 0.5118, "lon": 101.8075, "address": "Pusat Pemerintahan Provinsi Riau"},
+    "kepulauan riau": {"lat": 3.9834, "lon": 108.1982, "address": "Pusat Pemerintahan Provinsi Kepulauan Riau"},
+    "jambi": {"lat": -1.6030, "lon": 103.5835, "address": "Pusat Pemerintahan Provinsi Jambi"},
+    "bengkulu": {"lat": -3.7917, "lon": 102.2636, "address": "Pusat Pemerintahan Provinsi Bengkulu"},
+    "sumatera selatan": {"lat": -3.2145, "lon": 104.1670, "address": "Pusat Pemerintahan Provinsi Sumatera Selatan"},
+    "kepulauan bangka belitung": {"lat": -1.1436, "lon": 105.2806, "address": "Pusat Pemerintahan Provinsi Kepulauan Bangka Belitung"},
+    "lampung": {"lat": -4.9191, "lon": 105.0190, "address": "Pusat Pemerintahan Provinsi Lampung"},
+    "banten": {"lat": -6.4540, "lon": 106.1094, "address": "Pusat Pemerintahan Provinsi Banten"},
+    "dki jakarta": {"lat": -6.1748, "lon": 106.8271, "address": "Pusat Pemerintahan Provinsi DKI Jakarta"},
+    "jawa barat": {"lat": -6.9197, "lon": 107.6019, "address": "Pusat Pemerintahan Provinsi Jawa Barat"},
+    "jawa tengah": {"lat": -7.2592, "lon": 110.2006, "address": "Pusat Pemerintahan Provinsi Jawa Tengah"},
+    "di yogyakarta": {"lat": -7.8014, "lon": 110.3647, "address": "Pusat Pemerintahan Provinsi DI Yogyakarta"},
+    "jawa timur": {"lat": -7.7190, "lon": 112.7324, "address": "Pusat Pemerintahan Provinsi Jawa Timur"},
+    "bali": {"lat": -8.3698, "lon": 115.1318, "address": "Pusat Pemerintahan Provinsi Bali"},
+    "nusa tenggara barat": {"lat": -8.6067, "lon": 117.5072, "address": "Pusat Pemerintahan Provinsi Nusa Tenggara Barat"},
+    "nusa tenggara timur": {"lat": -8.5256, "lon": 122.6851, "address": "Pusat Pemerintahan Provinsi Nusa Tenggara Timur"},
+    "kalimantan barat": {"lat": -0.0878, "lon": 111.1194, "address": "Pusat Pemerintahan Provinsi Kalimantan Barat"},
+    "kalimantan tengah": {"lat": -1.6019, "lon": 113.4163, "address": "Pusat Pemerintahan Provinsi Kalimantan Tengah"},
+    "kalimantan selatan": {"lat": -3.0004, "lon": 115.4401, "address": "Pusat Pemerintahan Provinsi Kalimantan Selatan"},
+    "kalimantan timur": {"lat": 0.4558, "lon": 116.4695, "address": "Pusat Pemerintahan Provinsi Kalimantan Timur"},
+    "kalimantan utara": {"lat": 2.8996, "lon": 116.2270, "address": "Pusat Pemerintahan Provinsi Kalimantan Utara"},
+    "sulawesi utara": {"lat": 1.5026, "lon": 125.0169, "address": "Pusat Pemerintahan Provinsi Sulawesi Utara"},
+    "gorontalo": {"lat": 0.6412, "lon": 122.7274, "address": "Pusat Pemerintahan Provinsi Gorontalo"},
+    "sulawesi tengah": {"lat": -0.3571, "lon": 119.8841, "address": "Pusat Pemerintahan Provinsi Sulawesi Tengah"},
+    "sulawesi barat": {"lat": -2.4636, "lon": 119.3460, "address": "Pusat Pemerintahan Provinsi Sulawesi Barat"},
+    "sulawesi selatan": {"lat": -3.7353, "lon": 120.1588, "address": "Pusat Pemerintahan Provinsi Sulawesi Selatan"},
+    "sulawesi tenggara": {"lat": -4.1238, "lon": 122.0684, "address": "Pusat Pemerintahan Provinsi Sulawesi Tenggara"},
+    "maluku": {"lat": -2.9160, "lon": 129.4505, "address": "Pusat Pemerintahan Provinsi Maluku"},
+    "maluku utara": {"lat": 0.6249, "lon": 127.8288, "address": "Pusat Pemerintahan Provinsi Maluku Utara"},
+    "papua barat": {"lat": -2.6397, "lon": 133.6361, "address": "Pusat Pemerintahan Provinsi Papua Barat"},
+    "papua": {"lat": -5.0000, "lon": 140.0000, "address": "Pusat Pemerintahan Provinsi Papua"},
+    "papua selatan": {"lat": -6.6645, "lon": 139.5509, "address": "Pusat Pemerintahan Provinsi Papua Selatan"},
+    "papua tengah": {"lat": -3.8843, "lon": 136.5358, "address": "Pusat Pemerintahan Provinsi Papua Tengah"},
+    "papua pegunungan": {"lat": -4.2436, "lon": 139.4095, "address": "Pusat Pemerintahan Provinsi Papua Pegunungan"},
+    "papua barat daya": {"lat": -1.1165, "lon": 131.9432, "address": "Pusat Pemerintahan Provinsi Papua Barat Daya"}
+}
+
 def get_coordinates(location_name, retries=3):
     """Get coordinates from location name using ArcGIS, Photon, and Nominatim fallbacks"""
     from geopy.geocoders import ArcGIS, Nominatim, Photon
     import time
     
+    # --- LOGIKA TAMBAHAN: CEK KAMUS LOKASI ADMINISTRATIF ---
+    # Membersihkan input agar pencocokan berhasil (misal "Jakarta Timur, Indonesia" jadi "jakarta timur")
+    loc_lower = location_name.strip().lower()
+    loc_clean = loc_lower.replace(", indonesia", "").replace("indonesia", "").strip()
+    if loc_clean.endswith(","):
+        loc_clean = loc_clean[:-1].strip()
+        
+    if loc_clean in CUSTOM_LOCATIONS:
+        print(f"[GEOCODE] Menggunakan titik administratif perwakilan untuk: {loc_clean}")
+        data = CUSTOM_LOCATIONS[loc_clean]
+        return data["lat"], data["lon"], data["address"]
+    # -------------------------------------------------------
+
     # Try ArcGIS first
     for attempt in range(retries):
         try:
