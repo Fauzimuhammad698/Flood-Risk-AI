@@ -1387,7 +1387,7 @@ if analyze_clicked and location_input:
                     if is_name_match:
                         hist_msg = f"daerah ini pernah banjir pada tanggal {dates_str}"
                     else:
-                        hist_msg = f"Daerah ini lumayan memiliki potensi dikarenakan bertetanggaan dengan wilayah {loc_name} yang pernah tercatat historis pada {dates_str}"
+                        hist_msg = f"Wilayah ini berpotensi terdampak genangan kiriman dari daerah sekitarnya ({loc_name}) yang memiliki riwayat banjir pada tanggal {dates_str}."
 
             if hist_msg:
                 st.info(f"**Fakta Historis:** {hist_msg}")
