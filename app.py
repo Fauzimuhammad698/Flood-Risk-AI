@@ -1358,8 +1358,8 @@ if analyze_clicked and location_input:
             hist_msg = None
             
             if df_hist is not None and address:
-                # 1. Hitung Jarak Berdasarkan Koordinat (Toleransi ~11km / 0.1 derajat)
-                tolerance_deg = 0.1
+                # 1. Hitung Jarak Berdasarkan Koordinat (Toleransi ~2km / 0.018 derajat)
+                tolerance_deg = 0.018
                 df_hist['distance'] = ((df_hist['lat'] - lat)**2 + (df_hist['lon'] - lon)**2)**0.5
                 
                 # 2. Siapkan Kata Kunci dari Input Pengguna (untuk pencocokan nama)
