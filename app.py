@@ -1118,16 +1118,20 @@ def create_folium_map(lat, lon, address, risk_level, risk_color):
         dash_array='5, 10'  # Dashed line
     ).add_to(m)
     
-    # Outer circle (macro weather grid - 11km radius)
-    folium.Circle(
-        location=[lat, lon],
-        radius=11000,  # 11km (Skala Makro Open-Meteo)
-        popup='Batas Resolusi Cuaca Makro (11km)',
-        color='blue',  # Warna biru untuk merepresentasikan cuaca/langit
+    # Outer Rectangle (macro weather grid - 11x11km grid)
+    # 11km is approx 0.1 degree. So +/- 0.05 degree from center
+    bounds = [
+        [lat - 0.05, lon - 0.05], # South-West corner
+        [lat + 0.05, lon + 0.05]  # North-East corner
+    ]
+    folium.Rectangle(
+        bounds=bounds,
+        popup='Batas Resolusi Grid Cuaca Satelit (11x11 km)',
+        color='blue',
         fill=False,
         weight=1,
         dash_array='10, 15',
-        tooltip='Batas Resolusi Satelit Cuaca (11km)'
+        tooltip='Grid Satelit Cuaca (11x11 km)'
     ).add_to(m)
     
     # Add mini map (overview) in corner
