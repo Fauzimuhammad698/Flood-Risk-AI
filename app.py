@@ -1095,7 +1095,21 @@ def create_folium_map(lat, lon, address, risk_level, risk_color):
     ).add_to(m)
     
     # Add multiple risk zones with different opacities
-    # Inner circle (strong risk)
+    
+    # 1. Micro-pixel sampling (30m satellite resolution) - For Dosen validation
+    folium.Circle(
+        location=[lat, lon],
+        radius=30,  # 30 meters
+        popup='Resolusi Sampling Satelit (30x30m)',
+        tooltip='Titik Presisi Tinggi (30m)',
+        color='#9333ea',  # Purple to distinguish from risk color
+        fill=True,
+        fill_color='#a855f7',
+        fill_opacity=0.6,
+        weight=2
+    ).add_to(m)
+
+    # 2. Inner circle (strong risk)
     folium.Circle(
         location=[lat, lon],
         radius=1000,  # 1km
