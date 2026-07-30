@@ -1357,14 +1357,20 @@ if analyze_clicked and location_input:
             df_hist = load_historical_data()
             hist_msg = None
             
-            if df_hist is not None:
-                # Menggunakan koordinat latitude & longitude untuk mencari titik terdekat (radius ~11km / 0.1 derajat)
+            if df_hist is not None and address:
+                # 1. Hitung Jarak Berdasarkan Koordinat (Toleransi ~11km / 0.1 derajat)
                 tolerance_deg = 0.1
-                # Menghitung jarak aproksimasi (Euclidean)
                 df_hist['distance'] = ((df_hist['lat'] - lat)**2 + (df_hist['lon'] - lon)**2)**0.5
                 
-                # Filter titik-titik yang masuk ke dalam radius toleransi
-                matching_rows = df_hist[df_hist['distance'] <= tolerance_deg].sort_values('distance')
+                # 2. Siapkan Kata Kunci dari Input Pengguna (untuk pencocokan nama)
+                loc_keywords = [word.strip().lower() for word in address.split(',')]
+                search_term = loc_keywords[0] if len(loc_keywords) > 0 else ""
+                
+                # Kondisi Hybrid: Masuk Radius Jarak ATAU Nama Lokasinya Cocok
+                cond_distance = df_hist['distance'] <= tolerance_deg
+                cond_name = df_hist['nama_lokasi'].str.lower().str.contains(search_term, na=False, regex=False) if search_term else False
+                
+                matching_rows = df_hist[cond_distance | cond_name].sort_values('distance')
                 
                 if not matching_rows.empty:
                     # Ambil maksimal 3 tanggal kejadian banjir terbaru di area ini
