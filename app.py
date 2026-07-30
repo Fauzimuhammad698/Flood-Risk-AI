@@ -718,8 +718,14 @@ def fetch_comprehensive_data(lat, lon, adm4_code=None, location_name=None):
     """
     rainfall_data = None
     
+    # --- TAMBAHAN UNTUK SIDANG: MEMAKSA GRID CUACA 11 KM SAMA PERSIS ---
+    # Membulatkan koordinat (0,1 derajat = 11 km) HANYA untuk tarikan data API cuaca.
+    # Data fisik satelit (GEE: kemiringan, tutupan lahan) tetap menggunakan presisi asli.
+    weather_lat = round(lat, 1)
+    weather_lon = round(lon, 1)
+    
     # PRIORITY 1: BMKG Forecast API
-    print(f"[FETCH] Priority 1: Trying BMKG Forecast API for lat={lat}, lon={lon}")
+    print(f"[FETCH] Priority 1: Trying BMKG Forecast API for lat={weather_lat}, lon={weather_lon}")
     if adm4_code:
         bmkg_data = get_bmkg_weather(adm4_code=adm4_code)
         if bmkg_data and bmkg_data.get('rainfall_curr') is not None:
@@ -737,7 +743,7 @@ def fetch_comprehensive_data(lat, lon, adm4_code=None, location_name=None):
     # PRIORITY 2: BMKG Nowcast Alert (if Priority 1 failed)
     if rainfall_data is None:
         print(f"[FETCH] Priority 2: Trying BMKG Nowcast Alert for location: {location_name}")
-        nowcast_data = get_bmkg_nowcast_alert(lat, lon, location_name)
+        nowcast_data = get_bmkg_nowcast_alert(weather_lat, weather_lon, location_name)
         if nowcast_data and nowcast_data.get('alert_active'):
             # Location is under warning - set warning threshold
             rainfall_data = {
@@ -754,7 +760,7 @@ def fetch_comprehensive_data(lat, lon, adm4_code=None, location_name=None):
     # PRIORITY 3: Open-Meteo (final fallback)
     if rainfall_data is None:
         print(f"[FETCH] Priority 3: Using Open-Meteo as final fallback")
-        rainfall_data = get_openmeteo_weather(lat, lon)
+        rainfall_data = get_openmeteo_weather(weather_lat, weather_lon)
         rainfall_data['weather_source'] = 'Open-Meteo'
         print(f"[FETCH] [OK] Priority 3: Open-Meteo - {rainfall_data['rainfall_curr']:.1f}mm")
     
