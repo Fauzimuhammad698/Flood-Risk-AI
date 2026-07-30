@@ -1357,21 +1357,20 @@ if analyze_clicked and location_input:
             df_hist = load_historical_data()
             hist_msg = None
             
-            if df_hist is not None and address:
-                # Ambil nama kota/daerah dari address (biasanya kata pertama sebelum koma)
-                loc_keywords = [word.strip().lower() for word in address.split(',')]
+            if df_hist is not None:
+                # Menggunakan koordinat latitude & longitude untuk mencari titik terdekat (radius ~11km / 0.1 derajat)
+                tolerance_deg = 0.1
+                # Menghitung jarak aproksimasi (Euclidean)
+                df_hist['distance'] = ((df_hist['lat'] - lat)**2 + (df_hist['lon'] - lon)**2)**0.5
                 
-                if len(loc_keywords) > 0:
-                    search_term = loc_keywords[0]
-                    # Cari baris yang 'nama_lokasi'-nya mengandung kata kunci kota
-                    matching_rows = df_hist[df_hist['nama_lokasi'].str.lower().str.contains(search_term, na=False, regex=False)]
-                    
-                    if not matching_rows.empty:
-                        # Ambil 3 tanggal terbaru
-                        dates = matching_rows['date'].sort_values(ascending=False).head(3).tolist()
-                        dates_str = ", ".join(dates)
-                        loc_name = matching_rows.iloc[0]['nama_lokasi']
-                        hist_msg = f"daerah ini pernah banjir pada tanggal {dates_str}"
+                # Filter titik-titik yang masuk ke dalam radius toleransi
+                matching_rows = df_hist[df_hist['distance'] <= tolerance_deg].sort_values('distance')
+                
+                if not matching_rows.empty:
+                    # Ambil maksimal 3 tanggal kejadian banjir terbaru di area ini
+                    dates = matching_rows['date'].sort_values(ascending=False).unique()[:3].tolist()
+                    dates_str = ", ".join(dates)
+                    hist_msg = f"daerah ini pernah banjir pada tanggal {dates_str}"
 
             if hist_msg:
                 st.info(f"**Fakta Historis:** {hist_msg}")
