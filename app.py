@@ -1153,6 +1153,17 @@ def create_folium_map(lat, lon, address, risk_level, risk_color):
     return m
 
 
+@st.cache_data
+def load_historical_data():
+    try:
+        df = pd.read_csv("final_dataset_multisource (1).csv")
+        # Filter hanya yang banjir
+        df_banjir = df[df['disaster'] == 1].copy()
+        return df_banjir
+    except Exception as e:
+        print(f"Error loading historical data: {e}")
+        return None
+
 # --- MAIN UI ---
 
 # Header with current time
@@ -1339,6 +1350,38 @@ if analyze_clicked and location_input:
         with tab2:
             st.markdown("<div class='explanation-card'>", unsafe_allow_html=True)
             st.markdown("### 🤖 AI Analysis Summary")
+            
+            # --- Catatan Historis BNPB (Real Data) ---
+            st.markdown("#### 📜 Catatan Historis BNPB")
+            
+            df_hist = load_historical_data()
+            hist_msg = None
+            
+            if df_hist is not None and address:
+                # Ambil nama kota/daerah dari address (biasanya kata pertama sebelum koma)
+                loc_keywords = [word.strip().lower() for word in address.split(',')]
+                
+                if len(loc_keywords) > 0:
+                    search_term = loc_keywords[0]
+                    # Cari baris yang 'nama_lokasi'-nya mengandung kata kunci kota
+                    matching_rows = df_hist[df_hist['nama_lokasi'].str.lower().str.contains(search_term, na=False, regex=False)]
+                    
+                    if not matching_rows.empty:
+                        # Ambil 3 tanggal terbaru
+                        dates = matching_rows['date'].sort_values(ascending=False).head(3).tolist()
+                        dates_str = ", ".join(dates)
+                        loc_name = matching_rows.iloc[0]['nama_lokasi']
+                        hist_msg = f"daerah ini pernah banjir pada tanggal {dates_str}"
+
+            if hist_msg:
+                st.info(f"**Fakta Historis:** {hist_msg}")
+            else:
+                if risk_level == "Tinggi":
+                    st.info("**Fakta Historis:** Walaupun prediksi AI menunjukkan Risiko Tinggi, belum ditemukan rekaman banjir spesifik di dataset historis untuk titik ini. Tetap waspada.")
+                else:
+                    st.info("**Fakta Historis:** Belum ada catatan kejadian banjir spesifik untuk lokasi ini di dataset historis yang tersedia.")
+                    
+            st.markdown("---")
             
             explanations = generate_ai_explanation(raw_data, risk_level, None)
             for exp in explanations:
