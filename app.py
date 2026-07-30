@@ -1119,10 +1119,13 @@ def create_folium_map(lat, lon, address, risk_level, risk_color):
     ).add_to(m)
     
     # Outer Rectangle (macro weather grid - 11x11km grid)
-    # 11km is approx 0.1 degree. So +/- 0.05 degree from center
+    # The grid must snap to the nearest 0.1 degree (just like the weather API fetch)
+    grid_center_lat = round(lat, 1)
+    grid_center_lon = round(lon, 1)
+    
     bounds = [
-        [lat - 0.05, lon - 0.05], # South-West corner
-        [lat + 0.05, lon + 0.05]  # North-East corner
+        [grid_center_lat - 0.05, grid_center_lon - 0.05], # South-West corner
+        [grid_center_lat + 0.05, grid_center_lon + 0.05]  # North-East corner
     ]
     folium.Rectangle(
         bounds=bounds,
