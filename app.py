@@ -1373,10 +1373,21 @@ if analyze_clicked and location_input:
                 matching_rows = df_hist[cond_distance | cond_name].sort_values('distance')
                 
                 if not matching_rows.empty:
+                    # Ambil data baris teratas (paling relevan/terdekat)
+                    first_match = matching_rows.iloc[0]
+                    loc_name = first_match['nama_lokasi']
+                    
+                    # Cek apakah cocok karena nama atau murni karena jarak (tetangga)
+                    is_name_match = search_term in str(loc_name).lower() if search_term else False
+                    
                     # Ambil maksimal 3 tanggal kejadian banjir terbaru di area ini
                     dates = matching_rows['date'].sort_values(ascending=False).unique()[:3].tolist()
                     dates_str = ", ".join(dates)
-                    hist_msg = f"daerah ini pernah banjir pada tanggal {dates_str}"
+                    
+                    if is_name_match:
+                        hist_msg = f"daerah ini pernah banjir pada tanggal {dates_str}"
+                    else:
+                        hist_msg = f"Daerah ini lumayan memiliki potensi dikarenakan bertetanggaan dengan wilayah {loc_name} yang pernah tercatat historis pada {dates_str}"
 
             if hist_msg:
                 st.info(f"**Fakta Historis:** {hist_msg}")
