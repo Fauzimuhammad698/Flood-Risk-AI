@@ -1327,6 +1327,7 @@ if analyze_clicked and location_input:
                 st.metric(label, value, help=help_text)
         
         # --- TABS ---
+        st.markdown("<p style='color:red; font-weight:bold;'>DEBUG VERSI: KOTAK 11 KM - JIKA INI MUNCUL, UPDATE BERHASIL</p>", unsafe_allow_html=True)
         tab1, tab2, tab3 = st.tabs(["🗺️ Peta Risiko", "🧠 Analisis AI", "📋 Data Lengkap"])
         
         with tab1:
