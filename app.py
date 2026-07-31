@@ -1193,7 +1193,6 @@ st.markdown(f"""
 st.markdown("""
 <div class="main-header">
     <h1>🌊 Sistem Prediksi Risiko Banjir AI</h1>
-    <p>Integrasi BMKG, GEE & Hybrid Scorer untuk Prediksi Real-time</p>
 </div>
 """, unsafe_allow_html=True)
 
