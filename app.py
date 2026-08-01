@@ -1362,9 +1362,105 @@ if analyze_clicked and location_input:
         
         with tab2:
             st.markdown("<div class='explanation-card'>", unsafe_allow_html=True)
-            st.markdown("### 🤖 AI Analysis Summary")
+            st.markdown("### 🤖 Analisis AI & Pembobotan Risiko")
             
-            # --- Catatan Historis BNPB (Real Data) ---
+            # --- 1. BEDAH RINCIAN PROBABILITAS (EXPLAINABLE AI / XAI) ---
+            # Dibangun dengan pengaman try-except (Crash-proof) dan proteksi batas min/max
+            try:
+                st.markdown("#### ⚖️ Bedah Rincian Pembobotan Probabilitas (Explainable AI)")
+                st.markdown("*Berikut adalah rincian kontribusi nyata dari parameter hidrologis dan data historis terhadap hasil persentase probabilitas akhir:*")
+                
+                # Kalkulasi aman dengan batas atas/bawah (clamp)
+                r_curr = float(raw_data.get('rainfall_curr', 0.0))
+                r_3d = float(raw_data.get('rainfall_3d', 0.0))
+                r_7d = float(raw_data.get('rainfall_7d', 0.0))
+                r_slope = float(raw_data.get('slope', 0.0))
+                r_ndvi = float(raw_data.get('ndvi', 0.0))
+                r_land = str(raw_data.get('land_cover', 'Urban'))
+                
+                # Komponen Kontribusi Hujan
+                c_hujan_raw = min(r_curr / 100.0, 1.0) * 0.30 + min(r_3d / 300.0, 1.0) * 0.25 + min(r_7d / 500.0, 1.0) * 0.25
+                c_hujan_pct = max(0.0, min(c_hujan_raw, 0.80))
+                
+                # Komponen Kontribusi Kemiringan (Slope) - Jatah maks 10%
+                c_slope_raw = (1.0 - min(r_slope / 30.0, 1.0)) * 0.10
+                c_slope_pct = max(0.0, min(c_slope_raw, 0.10))
+                
+                # Komponen Kontribusi Vegetasi (NDVI) - Jatah maks 10%
+                c_ndvi_raw = (1.0 - r_ndvi) * 0.10
+                c_ndvi_pct = max(0.0, min(c_ndvi_raw, 0.10))
+                
+                # Komponen Kontribusi Tutupan Lahan
+                land_vuln_map = {'Urban': 0.8, 'Barren': 0.7, 'Agri': 0.4, 'Forest': 0.2, 'Water': 0.5}
+                land_coef = land_vuln_map.get(r_land, 0.5)
+                c_lahan_pct = max(0.0, min(land_coef * 0.10, 0.10))
+                
+                # Komponen Historis BNPB (20%)
+                c_ai_pct = max(0.0, min(float(model_prob) * 0.20, 0.20))
+                
+                # Teks Keterangan Dinamis
+                ket_slope = "Sangat rentan menampung air (lereng datar)" if r_slope < 5 else "Aliran air cukup lancar"
+                ket_ndvi = "Resapan tanah rendah (jarang tanaman)" if r_ndvi < 0.3 else ("Kapasitas infiltrasi tanah sedang/baik" if r_ndvi >= 0.5 else "Infiltrasi cukup")
+                ket_hujan = "Tidak ada suplai hujan ekstrem" if r_curr < 20 else "Intensitas hujan menambah risiko tinggi"
+                
+                # Render Progress Strips
+                col_p1, col_p2 = st.columns([1, 3])
+                with col_p1:
+                    st.markdown(f"**⛰️ Kemiringan ({r_slope:.1f}°)**<br><span style='color:#3b82f6; font-weight:bold; font-size:1.1rem;'>+{c_slope_pct*100:.1f}%</span>", unsafe_allow_html=True)
+                with col_p2:
+                    st.progress(min(max(c_slope_pct / 0.10, 0.0), 1.0))
+                    st.caption(f"💡 *{ket_slope} (Maksimal jatah: 10%)*")
+                
+                col_p3, col_p4 = st.columns([1, 3])
+                with col_p3:
+                    st.markdown(f"**🌿 Vegetasi ({r_ndvi:.2f})**<br><span style='color:#10b981; font-weight:bold; font-size:1.1rem;'>+{c_ndvi_pct*100:.1f}%</span>", unsafe_allow_html=True)
+                with col_p4:
+                    st.progress(min(max(c_ndvi_pct / 0.10, 0.0), 1.0))
+                    st.caption(f"💡 *{ket_ndvi} (Maksimal jatah: 10%)*")
+                    
+                col_p5, col_p6 = st.columns([1, 3])
+                with col_p5:
+                    st.markdown(f"**🏙️ Tipe Lahan ({r_land})**<br><span style='color:#f59e0b; font-weight:bold; font-size:1.1rem;'>+{c_lahan_pct*100:.1f}%</span>", unsafe_allow_html=True)
+                with col_p6:
+                    st.progress(min(max(c_lahan_pct / 0.10, 0.0), 1.0))
+                    st.caption(f"💡 *Tingkat kedapan permukaan untuk kategori {r_land} (Maksimal jatah: 10%)*")
+
+                col_p7, col_p8 = st.columns([1, 3])
+                with col_p7:
+                    st.markdown(f"**🌧️ Curah Hujan ({r_curr:.1f} mm)**<br><span style='color:#6366f1; font-weight:bold; font-size:1.1rem;'>+{c_hujan_pct*100:.1f}%</span>", unsafe_allow_html=True)
+                with col_p8:
+                    st.progress(min(max(c_hujan_pct / 0.80, 0.0), 1.0))
+                    st.caption(f"💡 *{ket_hujan} & akumulasi bulanan (Maksimal jatah: 50%)*")
+
+                col_p9, col_p10 = st.columns([1, 3])
+                with col_p9:
+                    st.markdown(f"**📜 Historis BNPB**<br><span style='color:#ec4899; font-weight:bold; font-size:1.1rem;'>+{c_ai_pct*100:.1f}%</span>", unsafe_allow_html=True)
+                with col_p10:
+                    st.progress(min(max(c_ai_pct / 0.20, 0.0), 1.0))
+                    st.caption("💡 *Validasi pola kejadian masa lalu berdasarkan Historis BNPB (Maksimal jatah: 20%)*")
+                
+                st.markdown("<br>", unsafe_allow_html=True)
+                
+                # Tabel Ringkasan untuk Sidang
+                df_summary = pd.DataFrame({
+                    "Parameter Sensor": ["Kemiringan Lereng (Slope)", "Indeks Vegetasi (NDVI)", "Tutupan Lahan", "Curah Hujan & Akumulasi", "Historis BNPB"],
+                    "Nilai Bacaan": [f"{r_slope:.1f}°", f"{r_ndvi:.2f}", f"{r_land}", f"{r_curr:.1f} mm", f"{model_prob*100:.1f}%"],
+                    "Jatah Maksimal": ["10.0%", "10.0%", "10.0%", "50.0%", "20.0%"],
+                    "Sumbangan Nyata": [f"+{c_slope_pct*100:.1f}%", f"+{c_ndvi_pct*100:.1f}%", f"+{c_lahan_pct*100:.1f}%", f"+{c_hujan_pct*100:.1f}%", f"+{c_ai_pct*100:.1f}%"],
+                    "Keterangan Hidrologis": [ket_slope, ket_ndvi, f"Kondisi permukaan {r_land}", ket_hujan, "Validasi historis data BNPB"]
+                })
+                
+                st.dataframe(df_summary, use_container_width=True, hide_index=True)
+                
+                st.info("💡 **Catatan Akademis:** Hasil akhir probabilitas adalah kombinasi rumus Hybrid di mana angka sumbangan di atas selanjutnya melewati tahap pengaman *Anti-Paranoid Thresholding* untuk menjamin stabilitas prediksi hidrologis nyata.")
+            
+            except Exception as e_xai:
+                print(f"[WARN] XAI visual explanation skipped due to non-critical rendering issue: {e_xai}")
+                # Pantang crash: Jika error visual terjadi, sistem sekadar melewatinya dengan mulus tanpa memutus aliran aplikasi
+            
+            st.markdown("---")
+            
+            # --- 2. HISTORIS DATA BNPB ---
             st.markdown("#### 📜 Catatan Historis BNPB")
             
             df_hist = load_historical_data()
@@ -1412,111 +1508,15 @@ if analyze_clicked and location_input:
                     
             st.markdown("---")
             
+            # --- 3. ANALISIS SEDERHANA ---
+            st.markdown("#### 💡 Kesimpulan Analisis Sederhana")
             explanations = generate_ai_explanation(raw_data, risk_level, None)
             for exp in explanations:
                 st.markdown(f"- {exp}")
             
-            # --- BEDAH RINCIAN PROBABILITAS (EXPLAINABLE AI / XAI) ---
-            # Dibangun dengan pengaman try-except (Crash-proof) dan proteksi batas min/max
-            try:
-                st.markdown("---")
-                st.markdown("#### ⚖️ Bedah Rincian Pembobotan Probabilitas (Explainable AI)")
-                st.markdown("*Berikut adalah rincian kontribusi nyata dari parameter hidrologis dan model AI terhadap hasil persentase probabilitas akhir:*")
-                
-                # 1. Kalkulasi aman dengan batas atas/bawah (clamp)
-                r_curr = float(raw_data.get('rainfall_curr', 0.0))
-                r_3d = float(raw_data.get('rainfall_3d', 0.0))
-                r_7d = float(raw_data.get('rainfall_7d', 0.0))
-                r_slope = float(raw_data.get('slope', 0.0))
-                r_ndvi = float(raw_data.get('ndvi', 0.0))
-                r_land = str(raw_data.get('land_cover', 'Urban'))
-                
-                # Komponen Kontribusi Hujan
-                c_hujan_raw = min(r_curr / 100.0, 1.0) * 0.30 + min(r_3d / 300.0, 1.0) * 0.25 + min(r_7d / 500.0, 1.0) * 0.25
-                c_hujan_pct = max(0.0, min(c_hujan_raw, 0.80))
-                
-                # Komponen Kontribusi Kemiringan (Slope) - Jatah maks 10%
-                c_slope_raw = (1.0 - min(r_slope / 30.0, 1.0)) * 0.10
-                c_slope_pct = max(0.0, min(c_slope_raw, 0.10))
-                
-                # Komponen Kontribusi Vegetasi (NDVI) - Jatah maks 10%
-                c_ndvi_raw = (1.0 - r_ndvi) * 0.10
-                c_ndvi_pct = max(0.0, min(c_ndvi_raw, 0.10))
-                
-                # Komponen Kontribusi Tutupan Lahan
-                land_vuln_map = {'Urban': 0.8, 'Barren': 0.7, 'Agri': 0.4, 'Forest': 0.2, 'Water': 0.5}
-                land_coef = land_vuln_map.get(r_land, 0.5)
-                c_lahan_pct = max(0.0, min(land_coef * 0.10, 0.10))
-                
-                # Komponen Model ML (20%)
-                c_ai_pct = max(0.0, min(float(model_prob) * 0.20, 0.20))
-                
-                # Teks Keterangan Dinamis
-                ket_slope = "Sangat rentan menampung air (lereng datar)" if r_slope < 5 else "Aliran air cukup lancar"
-                ket_ndvi = "Resapan tanah rendah (jarang tanaman)" if r_ndvi < 0.3 else ("Kapasitas infiltrasi tanah sedang/baik" if r_ndvi >= 0.5 else "Infiltrasi cukup")
-                ket_hujan = "Tidak ada suplai hujan ekstrem" if r_curr < 20 else "Intensitas hujan menambah risiko tinggi"
-                
-                # Render Progress Strips
-                col_p1, col_p2 = st.columns([1, 3])
-                with col_p1:
-                    st.markdown(f"**⛰️ Kemiringan ({r_slope:.1f}°)**<br><span style='color:#3b82f6; font-weight:bold; font-size:1.1rem;'>+{c_slope_pct*100:.1f}%</span>", unsafe_allow_html=True)
-                with col_p2:
-                    st.progress(min(max(c_slope_pct / 0.10, 0.0), 1.0))
-                    st.caption(f"💡 *{ket_slope} (Maksimal jatah: 10%)*")
-                
-                col_p3, col_p4 = st.columns([1, 3])
-                with col_p3:
-                    st.markdown(f"**🌿 Vegetasi ({r_ndvi:.2f})**<br><span style='color:#10b981; font-weight:bold; font-size:1.1rem;'>+{c_ndvi_pct*100:.1f}%</span>", unsafe_allow_html=True)
-                with col_p4:
-                    st.progress(min(max(c_ndvi_pct / 0.10, 0.0), 1.0))
-                    st.caption(f"💡 *{ket_ndvi} (Maksimal jatah: 10%)*")
-                    
-                col_p5, col_p6 = st.columns([1, 3])
-                with col_p5:
-                    st.markdown(f"**🏙️ Tipe Lahan ({r_land})**<br><span style='color:#f59e0b; font-weight:bold; font-size:1.1rem;'>+{c_lahan_pct*100:.1f}%</span>", unsafe_allow_html=True)
-                with col_p6:
-                    st.progress(min(max(c_lahan_pct / 0.10, 0.0), 1.0))
-                    st.caption(f"💡 *Tingkat kedapan permukaan untuk kategori {r_land} (Maksimal jatah: 10%)*")
-
-                col_p7, col_p8 = st.columns([1, 3])
-                with col_p7:
-                    st.markdown(f"**🌧️ Curah Hujan ({r_curr:.1f} mm)**<br><span style='color:#6366f1; font-weight:bold; font-size:1.1rem;'>+{c_hujan_pct*100:.1f}%</span>", unsafe_allow_html=True)
-                with col_p8:
-                    st.progress(min(max(c_hujan_pct / 0.80, 0.0), 1.0))
-                    st.caption(f"💡 *{ket_hujan} & akumulasi bulanan (Maksimal jatah: 50%)*")
-
-                col_p9, col_p10 = st.columns([1, 3])
-                with col_p9:
-                    st.markdown(f"**🤖 Model AI (XGBoost)**<br><span style='color:#ec4899; font-weight:bold; font-size:1.1rem;'>+{c_ai_pct*100:.1f}%</span>", unsafe_allow_html=True)
-                with col_p10:
-                    st.progress(min(max(c_ai_pct / 0.20, 0.0), 1.0))
-                    st.caption("💡 *Validasi pola kejadian masa lalu (Maksimal jatah: 20%)*")
-                
-                st.markdown("<br>", unsafe_allow_html=True)
-                
-                # Tabel Ringkasan untuk Sidang
-                df_summary = pd.DataFrame({
-                    "Parameter Sensor": ["Kemiringan Lereng (Slope)", "Indeks Vegetasi (NDVI)", "Tutupan Lahan", "Curah Hujan & Akumulasi", "Model AI (XGBoost)"],
-                    "Nilai Bacaan": [f"{r_slope:.1f}°", f"{r_ndvi:.2f}", f"{r_land}", f"{r_curr:.1f} mm", f"{model_prob*100:.1f}%"],
-                    "Jatah Maksimal": ["10.0%", "10.0%", "10.0%", "50.0%", "20.0%"],
-                    "Sumbangan Nyata": [f"+{c_slope_pct*100:.1f}%", f"+{c_ndvi_pct*100:.1f}%", f"+{c_lahan_pct*100:.1f}%", f"+{c_hujan_pct*100:.1f}%", f"+{c_ai_pct*100:.1f}%"],
-                    "Keterangan Hidrologis": [ket_slope, ket_ndvi, f"Kondisi permukaan {r_land}", ket_hujan, "Validasi historis AI"]
-                })
-                
-                st.dataframe(df_summary, use_container_width=True, hide_index=True)
-                
-                st.info("💡 **Catatan Akademis:** Hasil akhir probabilitas adalah kombinasi rumus Hybrid di mana angka sumbangan di atas selanjutnya melewati tahap pengaman *Anti-Paranoid Thresholding* untuk menjamin stabilitas prediksi hidrologis nyata.")
-            
-            except Exception as e_xai:
-                print(f"[WARN] XAI visual explanation skipped due to non-critical rendering issue: {e_xai}")
-                # Pantang crash: Jika error visual terjadi, sistem sekadar melewatinya dengan mulus tanpa memutus aliran aplikasi
-            
-            st.markdown("---")
-            
             # SHAP Explanation (if available)
-            st.markdown("\n#### 📈 Top Faktor Risiko (AI-powered):")
-            
             if shap_values is not None and SHAP_AVAILABLE:
+                st.markdown("\n#### 📈 Top Faktor Risiko (AI-powered):")
                 try:
                     # Create SHAP force plot data
                     feature_names = assets['features'] if 'features' in assets else ['rainfall_curr', 'rainfall_3d', 'rainfall_7d', 'slope', 'ndvi', 'land_cover_enc', 'is_rainy_season']
@@ -1554,11 +1554,6 @@ if analyze_clicked and location_input:
                     
                 except Exception as e:
                     st.warning(f"⚠️ SHAP visualization error: {e}")
-                    # Fallback to simplified explanation
-                    show_simplified_explanation(raw_data, st)
-            else:
-                # Fallback to simplified explanation if SHAP not available
-                show_simplified_explanation(raw_data, st)
             
             st.markdown("</div>", unsafe_allow_html=True)
         
