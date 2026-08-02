@@ -926,25 +926,25 @@ def show_simplified_explanation(raw_data, st):
     
     # Terrain analysis
     if raw_data['slope'] < 5:
-        explanations.append("⛰️ **Lereng datar** - air mudah menggenang")
+        explanations.append("⛰️ **Topografi cenderung datar** – laju aliran limpasan air lamban")
     elif raw_data['slope'] > 20:
-        explanations.append("⛰️ **Lereng curam** - aliran air cepat")
+        explanations.append("⛰️ **Topografi curam** – mendukung drainase gravitasi yang lancar")
     
     # NDVI analysis
     if raw_data['ndvi'] < 0.3:
-        explanations.append("🌿 **Vegetasi jarang** - infiltrasi rendah")
+        explanations.append("🌿 **Kerapatan vegetasi minim** – kapasitas resapan air alami terbatas")
     elif raw_data['ndvi'] > 0.7:
-        explanations.append("🌿 **Vegetasi padat** - membantu serap air")
+        explanations.append("🌿 **Kerapatan vegetasi tinggi** – mempercepat resapan infiltrasi ke tanah")
     
     # Land cover analysis
     if raw_data['land_cover'] == 'Urban':
-        explanations.append("🏙️ **Area perkotaan** - permukaan kedap air")
+        explanations.append("🏙️ **Permukaan Beton/Aspal** – tingkat resapan air sangat minim (kedap air)")
     elif raw_data['land_cover'] == 'Forest':
-        explanations.append("🌲 **Area hutan** - infiltrasi baik")
+        explanations.append("🌲 **Ruang Terbuka Hijau (RTH)** – permeabilitas permukaan optimal menyerap air")
     
     # Elevation analysis
     if raw_data['elevation'] < 10:
-        explanations.append("📍 **Elevasi rendah** - rentan banjir")
+        explanations.append("📍 **Elevasi dataran rendah** – berpotensi menjadi titik akhir akumulasi aliran air")
     
     # Display explanations
     if explanations:
@@ -982,21 +982,21 @@ def generate_ai_explanation(raw_data, risk_level, top_features):
     
     # Terrain analysis
     if raw_data['slope'] < 5:
-        explanations.append("⛰️ Lereng datar - air mudah menggenang")
+        explanations.append("⛰️ Topografi cenderung datar – laju aliran limpasan air lamban")
     elif raw_data['slope'] > 20:
-        explanations.append("⛰️ Lereng curam - aliran air cepat")
+        explanations.append("⛰️ Topografi curam – mendukung drainase gravitasi yang lancar")
     
     # Vegetation analysis
     if raw_data['ndvi'] < 0.2:
-        explanations.append("🌿 Vegetasi jarang - permeabilitas tanah rendah")
+        explanations.append("🌿 Kerapatan vegetasi minim – kapasitas resapan air alami terbatas")
     elif raw_data['ndvi'] > 0.6:
-        explanations.append("🌿 Vegetasi lebat - membantu absorbsi air")
+        explanations.append("🌿 Kerapatan vegetasi lebat – mempercepat resapan infiltrasi ke tanah")
     
     # Land cover
     if raw_data['land_cover'] == 'Urban':
-        explanations.append("🏙️ Kawasan urban - permukaan tidak tembus air")
+        explanations.append("🏙️ Permukaan Didominasi Beton/Aspal – tingkat resapan air sangat minim (kedap air)")
     elif raw_data['land_cover'] == 'Forest':
-        explanations.append("🌲 Kawasan hutan - risiko genangan rendah")
+        explanations.append("🌲 Ruang Terbuka Hijau / Pepohonan Rapat – permeabilitas optimal menyerap air")
     
     # Seasonal
     current_month = datetime.now().month
@@ -1399,10 +1399,20 @@ if analyze_clicked and location_input:
                 c_ai_pct = max(0.0, min(float(model_prob) * 0.20, 0.20))
                 
                 # Teks Keterangan Dinamis
-                ket_slope = "Sangat rentan menampung air (lereng datar)" if r_slope < 5 else "Aliran air cukup lancar"
-                ket_ndvi = "Resapan tanah rendah (jarang tanaman)" if r_ndvi < 0.3 else ("Kapasitas infiltrasi tanah sedang/baik" if r_ndvi >= 0.5 else "Infiltrasi cukup")
-                ket_hujan = "Tidak ada suplai hujan ekstrem" if r_curr < 20 else "Intensitas hujan menambah risiko tinggi"
+                ket_slope = "Aliran limpasan cenderung melambat (topografi datar)" if r_slope < 5 else "Aliran drainase gravitasi cukup lancar"
+                ket_ndvi = "Resapan alami terbatas (minim vegetasi)" if r_ndvi < 0.3 else ("Kapasitas infiltrasi tanah optimal" if r_ndvi >= 0.5 else "Infiltrasi vegetasi tingkat sedang")
+                ket_hujan = "Intensitas hujan masih dalam batas toleransi drainase" if r_curr < 20 else "Intensitas hujan menambah beban debit limpasan"
                 
+                land_name_map = {
+                    'Urban': 'Permukaan Kedap Air (Beton/Aspal)',
+                    'Barren': 'Lahan Terbuka / Tanpa Vegetasi',
+                    'Agri': 'Lahan Pertanian / Vegetasi Rendah',
+                    'Forest': 'Ruang Terbuka Hijau / Pepohonan Rapat',
+                    'Water': 'Badan Air / Saluran Terbuka'
+                }
+                land_display_name = land_name_map.get(r_land, str(r_land))
+                short_land_name = land_display_name.split(' (')[0].split(' / ')[0]
+
                 # Render Progress Strips
                 col_p1, col_p2 = st.columns([1, 3])
                 with col_p1:
@@ -1420,10 +1430,10 @@ if analyze_clicked and location_input:
                     
                 col_p5, col_p6 = st.columns([1, 3])
                 with col_p5:
-                    st.markdown(f"**🏙️ Tipe Lahan ({r_land})**<br><span style='color:#f59e0b; font-weight:bold; font-size:1.1rem;'>+{c_lahan_pct*100:.1f}%</span>", unsafe_allow_html=True)
+                    st.markdown(f"**🏙️ Tipe Lahan ({short_land_name})**<br><span style='color:#f59e0b; font-weight:bold; font-size:1.1rem;'>+{c_lahan_pct*100:.1f}%</span>", unsafe_allow_html=True)
                 with col_p6:
                     st.progress(min(max(c_lahan_pct / 0.10, 0.0), 1.0))
-                    st.caption(f"💡 *Tingkat kedapan permukaan untuk kategori {r_land} (Maksimal jatah: 10%)*")
+                    st.caption(f"💡 *Karakteristik serapan untuk tipe: {land_display_name} (Maksimal jatah: 10%)*")
 
                 col_p7, col_p8 = st.columns([1, 3])
                 with col_p7:
@@ -1444,10 +1454,10 @@ if analyze_clicked and location_input:
                 # Tabel Ringkasan untuk Sidang
                 df_summary = pd.DataFrame({
                     "Parameter Sensor": ["Kemiringan Lereng (Slope)", "Indeks Vegetasi (NDVI)", "Tutupan Lahan", "Curah Hujan & Akumulasi", "Historis BNPB"],
-                    "Nilai Bacaan": [f"{r_slope:.1f}°", f"{r_ndvi:.2f}", f"{r_land}", f"{r_curr:.1f} mm", f"{model_prob*100:.1f}%"],
+                    "Nilai Bacaan": [f"{r_slope:.1f}°", f"{r_ndvi:.2f}", f"{land_display_name}", f"{r_curr:.1f} mm", f"{model_prob*100:.1f}%"],
                     "Jatah Maksimal": ["10.0%", "10.0%", "10.0%", "50.0%", "20.0%"],
                     "Sumbangan Nyata": [f"+{c_slope_pct*100:.1f}%", f"+{c_ndvi_pct*100:.1f}%", f"+{c_lahan_pct*100:.1f}%", f"+{c_hujan_pct*100:.1f}%", f"+{c_ai_pct*100:.1f}%"],
-                    "Keterangan Hidrologis": [ket_slope, ket_ndvi, f"Kondisi permukaan {r_land}", ket_hujan, "Validasi historis data BNPB"]
+                    "Keterangan Hidrologis": [ket_slope, ket_ndvi, f"Permeabilitas tipe: {land_display_name}", ket_hujan, "Validasi historis data BNPB"]
                 })
                 
                 st.dataframe(df_summary, use_container_width=True, hide_index=True)
