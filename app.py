@@ -41,7 +41,7 @@ except Exception:
 
 # Page configuration
 st.set_page_config(
-    page_title="Sistem Prediksi Risiko Banjir AI",
+    page_title="SISTEM DETEKSI GENANGAN AI",
     page_icon="🌊",
     layout="wide",
     initial_sidebar_state="collapsed"
@@ -1192,7 +1192,7 @@ st.markdown(f"""
 
 st.markdown("""
 <div class="main-header">
-    <h1>🌊 Sistem Prediksi Risiko Banjir AI</h1>
+    <h1>🌊 SISTEM DETEKSI GENANGAN AI</h1>
 </div>
 """, unsafe_allow_html=True)
 
