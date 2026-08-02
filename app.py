@@ -908,58 +908,108 @@ def get_risk_level(prob):
 
 
 def generate_inundation_assessment(raw_data, risk_level="Sedang", prob=None):
-    """Generate smart domain-specific synthesis focusing on surface inundation with threshold proximity analysis"""
-    r_slope = raw_data.get('slope', 0)
-    r_land = raw_data.get('land_cover', '')
-    r_ndvi = raw_data.get('ndvi', 0)
-    r_curr = raw_data.get('rainfall_curr', 0)
-    r_3d = raw_data.get('rainfall_3d', 0)
-    r_7d = raw_data.get('rainfall_7d', 0)
+    """Generate smart domain-specific synthesis focusing on surface inundation with threshold proximity and location-based dynamic analysis"""
+    r_slope = raw_data.get('slope', 0.0)
+    r_land = str(raw_data.get('land_cover', 'Lahan Terbuka'))
+    r_ndvi = raw_data.get('ndvi', 0.0)
+    r_curr = raw_data.get('rainfall_curr', 0.0)
+    r_3d = raw_data.get('rainfall_3d', 0.0)
+    r_7d = raw_data.get('rainfall_7d', 0.0)
     
-    # Hitung nilai persentase jika probabilitas tersedia
+    # 1. Ekstraksi Karakteristik Tutupan Lahan & Kapasitas Resapan (Infiltrasi)
+    lc_lower = r_land.lower()
+    if 'urban' in lc_lower or 'built' in lc_lower or 'kota' in lc_lower or 'beton' in lc_lower:
+        lc_desc = "dominasi permukaan kedap air berupa konstruksi perkotaan/aspal (Urban)"
+        lc_effect = "tingkat infiltrasi air ke dalam tanah sangat minim sehingga sangat mengandalkan kapasitas jaringan drainase"
+    elif 'forest' in lc_lower or 'hutan' in lc_lower or 'pohon' in lc_lower or r_ndvi >= 0.55:
+        lc_desc = "tutupan vegetasi yang rapat dan ruang terbuka hijau (RTH) yang memadai"
+        lc_effect = "kapasitas infiltrasi dan permeabilitas tanah bekerja optimal dalam meresap air limpasan"
+    elif 'agri' in lc_lower or 'tani' in lc_lower or 'kebun' in lc_lower or (0.3 <= r_ndvi < 0.55):
+        lc_desc = "tutupan vegetasi tingkat menengah (lahan pertanian / vegetasi berkerapatan sedang)"
+        lc_effect = "kemampuan serapan infiltrasi berjalan cukup stabil, namun bisa melambat saat terjadi penjenuhan air tanah"
+    elif 'water' in lc_lower or 'air' in lc_lower:
+        lc_desc = "area yang berdekatan langsung dengan badan air atau saluran terbuka"
+        lc_effect = "dinamika hidrologisnya sangat rentan terpengaruh oleh fluktuasi muka air saluran sekitar"
+    else:
+        lc_desc = f"karakteristik permukaan berupa {r_land} dengan kerapatan vegetasi sedang"
+        lc_effect = "kapasitas serapan permukaan dan limpasan air tergolong pada level moderat"
+
+    # 2. Ekstraksi Karakteristik Topografi & Drainase Alami
+    if r_slope < 3.0:
+        topo_desc = f"topografi yang cenderung datar (kemiringan rendah {r_slope:.1f}°)"
+        topo_effect = "laju aliran air limpasan secara gravitasi melambat, yang rawan memicu akumulasi genangan pada cekungan saat durasi hujan berkepanjangan"
+    elif 3.0 <= r_slope < 8.0:
+        topo_desc = f"kontur permukaan yang landai (kemiringan {r_slope:.1f}°)"
+        topo_effect = "aliran limpasan permukaan (*surface run-off*) tetap bergerak meskipun memerlukan waktu untuk terdistribusi secara tuntas ke saluran pembuangan"
+    else:
+        topo_desc = f"kemiringan lereng yang cukup miring/curam ({r_slope:.1f}°)"
+        topo_effect = "drainase alami bekerja cepat menggerakkan limpasan air menuju elevasi yang lebih rendah tanpa sempat menggenang lama"
+
+    # 3. Ekstraksi Kondisi Hidrologis & Kejenuhan Tanah
+    if r_curr > 50.0 or r_7d > 150.0 or r_3d > 80.0:
+        rain_desc = "beban debit air dari curah hujan sesaat maupun rekam medis kejenuhan tanah sebelumnya berada pada tingkatan yang cukup untuk memicu beban genangan"
+    elif 10.0 <= r_curr <= 50.0 or 40.0 <= r_7d <= 150.0:
+        rain_desc = "intensitas curah hujan dan tingkat kelembapan air tanah berstatus moderat dan terkendali"
+    else:
+        rain_desc = "kondisi atmosferik dan kelembapan saat ini tergolong normal sehingga tidak memberikan tekanan debit air berlebih pada ekosistem"
+
+    # Hitung nilai persentase secara matematis
     score = (prob * 100.0) if (prob is not None and prob <= 1.0) else (prob if prob is not None else -1)
     
-    # --- EVALUASI BERDASARKAN NILAI PERSENTASE (Mencegah Ketidakonsistenan & Meringkus Zona Transisi) ---
+    # --- SINTESIS KESIMPULAN GENANGAN YANG DINAMIS & LOGIS (Bukan Template Kaku) ---
     if score >= 0:
-        # 1. Zona Transisi Mendekati Risiko Sedang (20.0% - 29.9%) -> Contoh Kasus Jalan Cilodong (27%)
-        if 20.0 <= score < 30.0:
-            return f"⚠️ **Kesimpulan Deteksi Genangan (Transisi Batas Waspada):** Berdasarkan hasil deteksi multi-sensor dengan perolehan nilai **{score:.1f}%**, daerah ini **lumayan memiliki POTENSI GENANGAN tingkat sedang (menghampiri ambang batas)**. Nilai {score:.1f}% pada sistem memang terklasifikasi Rendah secara matematis, namun angka ini **sudah sangat mendekati nilai 30.0% yang bernilai Risiko Sedang**. Kombinasi parameter topografi dan tipe tutupan lahan saat ini membuat wilayah ini tetap memerlukan kewaspadaan terhadap potensi genangan sesaat pada titik-titik cekung apabila durasi hujan melambat dialirkan."
-            
-        # 2. Zona Transisi Mendekati Risiko Tinggi (60.0% - 69.9%)
-        elif 60.0 <= score < 70.0:
-            return f"🚨 **Kesimpulan Deteksi Genangan (Transisi Batas Kritis):** Berdasarkan hasil deteksi multi-sensor dengan perolehan nilai **{score:.1f}%**, kawasan ini **memiliki POTENSI GENANGAN yang tinggi dan perlu diwaspadai**. Meskipun terklasifikasi pada level Sedang, nilai {score:.1f}% ini **sudah sangat mendekati ambang batas 70.0% yang bernilai Risiko Tinggi**. Sedikit peningkatan intensitas curah hujan sesaat atau akumulasi limpasan air dari kawasan sekitar dapat langsung memicu genangan permukaan yang melebihi kapasitas drainase."
-            
-        # 3. Risiko Rendah Murni (< 20.0%)
-        elif score < 20.0:
-            return f"✅ **Kesimpulan Deteksi Genangan:** Berdasarkan hasil kalkulasi parameter dengan nilai **{score:.1f}%** (Risiko Rendah), daerah ini **memiliki POTENSI GENANGAN yang sangat minim**. Keseimbangan antara kemiringan topografi dan tingkat kapasitas resapan permukaan masih berfungsi optimal, sehingga limpasan air hujan dapat tersalurkan dengan baik tanpa terakumulasi menjadi genangan."
-            
-        # 4. Risiko Sedang Murni (30.0% - 59.9%)
-        elif 30.0 <= score < 60.0:
-            return f"⚠️ **Kesimpulan Deteksi Genangan:** Berdasarkan evaluasi parameter dengan perolehan nilai **{score:.1f}%** (Risiko Sedang), daerah ini **lumayan memiliki POTENSI GENANGAN tingkat waspada**. Kondisi permukaan lahan dan kontur kemiringan saat ini cenderung melambatkan laju drainase gravitasi, yang dapat mengakibatkan genangan air sesaat pada bahu jalan atau daerah yang lebih rendah jika intensitas hujan berdurasi lama."
-            
-        # 5. Risiko Tinggi Murni (>= 70.0%)
-        else:
-            return f"🚨 **Kesimpulan Deteksi Genangan:** Berdasarkan hasil deteksi multi-sensor dengan nilai **{score:.1f}%** (Risiko Tinggi), daerah ini **memiliki kerentanan POTENSI GENANGAN yang signifikan**. Tingginya risiko ini dipicu oleh besarnya debit limpasan air permukaan (*surface run-off*) dari curah hujan serta tingkat kejenuhan air tanah yang membuat sistem drainase alami mudah melampaui kapasitas tampung sesaat."
+        # 1. Zona Transisi Mendekati Risiko Sedang ( STRICT: 27.0% - 29.9% )
+        if 27.0 <= score < 30.0:
+            return (f"⚠️ **Kesimpulan Analisis Genangan (Transisi Batas Waspada):**\n\n"
+                    f"Berdasarkan pemantauan multi-sensor pada lokasi ini, sistem mengalkulasi skor risiko sebesar **{score:.1f}%**. Angka ini secara matematis memang masih berada di dalam kelas Risiko Rendah, namun **sudah sangat mendekati ambang batas 30.0% (Risiko Sedang/Waspada)**.\n\n"
+                    f"💡 **Diagnosis Proyektif Lokasi:**\n"
+                    f"Melihat kondisi aktual wilayah yang dibentuk oleh **{lc_desc}** dengan **{topo_desc}**, maka **{topo_effect}**. Ditambah lagi dengan situasi bahwa **{lc_effect}**, daerah ini **lumayan memiliki potensi kerentanan genangan sesaat** terutama pada area bahu jalan atau depresi topografi jika terjadi curah hujan berintensitas cukup lebat.")
 
-    # --- EVALUASI FALLBACK (Tanpa Skor Probabilitas Explicit / Mode Sederhana) ---
+        # 2. Zona Risiko Rendah dengan Catatan Karakteristik Khusus ( 20.0% - 26.9% ) -> Contoh Kasus 22.9% (Tidak Dianggap Mendekati 30%)
+        elif 20.0 <= score < 27.0:
+            return (f"✅ **Kesimpulan Analisis Genangan:**\n\n"
+                    f"Wilayah ini terklasifikasi pada tingkat **Risiko Rendah** dengan skor **{score:.1f}%**. Posisi angka ini masih cukup aman dan berada di bawah ambang batas risiko sedang (30.0%).\n\n"
+                    f"💡 **Diagnosis Proyektif Lokasi:**\n"
+                    f"Walaupun skor keseluruhan berstatus rendah, investigasi parameter spasial mendapati adanya **{lc_desc}** serta **{topo_desc}**. Ini menjelaskan mengapa lokasi mendapat nilai {score:.1f}%: karena meskipun **{lc_effect}**, risiko akumulasi genangan luas berhasil diredam karena **{rain_desc}**. Potensi genangan hanya berskala minim dan bersifat sementara pada titik-titik cekungan lokal bila sistem saluran bekerja normal.")
+
+        # 3. Risiko Rendah Murni / Aman Optimal ( < 20.0% )
+        elif score < 20.0:
+            return (f"✅ **Kesimpulan Analisis Genangan:**\n\n"
+                    f"Dengan perolehan skor risiko **{score:.1f}%**, daerah ini terverifikasi **memiliki potensi genangan permukaan yang sangat minim**.\n\n"
+                    f"💡 **Diagnosis Proyektif Lokasi:**\n"
+                    f"Keandalan hidrologis kawasan ini sangat didukung oleh paduan antara **{lc_desc}** dan **{topo_desc}**. Interaksi spasial tersebut menciptakan keseimbangan ekosistem di mana **{topo_effect}** dan **{lc_effect}**. Selama **{rain_desc}**, limpasan air dapat terus tersalurkan dengan lancar tanpa terakomodasi menjadi genangan.")
+
+        # 4. Zona Transisi Mendekati Risiko Tinggi / Kritis ( STRICT: 67.0% - 69.9% )
+        elif 67.0 <= score < 70.0:
+            return (f"🚨 **Kesimpulan Analisis Genangan (Transisi Batas Kritis):**\n\n"
+                    f"Hasil kalkulasi menetapkan angka risiko sebesar **{score:.1f}%** (Risiko Sedang). Namun, posisi nilai ini **sudah kritis menempel pada ambang batas 70.0% yang bernilai Risiko Tinggi**.\n\n"
+                    f"💡 **Diagnosis Proyektif Lokasi:**\n"
+                    f"Kombinasi **{lc_desc}** dan **{topo_desc}** di area ini mengakibatkan **{topo_effect}** di saat **{lc_effect}**. Karena **{rain_desc}**, kawasan ini **sangat memerlukan kewaspadaan tinggi terhadap genangan**; sedikit saja tambahan debit curah hujan ekstrem atau adanya kiriman air dari lingkungan sekitar dapat seketika menaikkan muka air melampaui kapasitas tampung saluran.")
+
+        # 5. Risiko Sedang Murni ( 30.0% - 66.9% )
+        elif 30.0 <= score < 67.0:
+            return (f"⚠️ **Kesimpulan Analisis Genangan:**\n\n"
+                    f"Evaluasi sistem menunjukkan skor **{score:.1f}%**, yang menempatkan wilayah ini pada kategori **Risiko Sedang (Waspada Genangan)**.\n\n"
+                    f"💡 **Diagnosis Proyektif Lokasi:**\n"
+                    f"Berdasarkan pemetaan spasial aktual, kawasan ini dipengaruhi oleh **{lc_desc}** serta **{topo_desc}**. Kondisi fisik tersebut menyebabkan **{topo_effect}**, di saat yang sama **{lc_effect}**. Dengan mempertimbangkan bahwa **{rain_desc}**, daerah ini **lumayan memiliki potensi munculnya genangan permukaan** sesaat pada titik-titik elevasi terendah apabila terjadi akumulasi hujan berdurasi panjang.")
+
+        # 6. Risiko Tinggi Murni ( >= 70.0% )
+        else:
+            return (f"🚨 **Kesimpulan Analisis Genangan:**\n\n"
+                    f"Kawasan ini terpetakan dalam status **Risiko Tinggi** dengan pencapaian skor **{score:.1f}%**, mengindikasikan **kerentanan genangan yang signifikan dan parah**.\n\n"
+                    f"💡 **Diagnosis Proyektif Lokasi:**\n"
+                    f"Investigasi parameter mendeteksi ancaman hidrologis akibat **{lc_desc}** yang diperkritis oleh **{topo_desc}**. Di bawah kondisi fisikal ini, **{lc_effect}** sementara **{topo_effect}**. Ditambah dengan situasi di mana **{rain_desc}**, laju limpasan air (*surface run-off*) sangat cepat terakumulasi menjadi genangan luas yang mampu melumpuhkan kenyamanan aktivitas permukaan.")
+
+    # --- EVALUASI FALLBACK ( Tanpa Probabilitas Ekplisit / Mode Analisis Sederhana ) ---
     if risk_level == "Tinggi":
-        if r_land == 'Urban' and r_slope < 5:
-            return "🚨 **Kesimpulan Deteksi Genangan:** Berdasarkan kombinasi topografi cenderung datar dan dominasi permukaan kedap air (beton/aspal perkotaan), daerah ini **memiliki potensi GENANGAN (surface inundation) yang tinggi**. Minimnya infiltrasi membuat air terakumulasi dengan cepat pada bahu jalan dan daerah cekung saat curah hujan melebihi kapasitas drainase sesaat."
-        elif r_7d > 200 or r_3d > 100:
-            return "🚨 **Kesimpulan Deteksi Genangan:** Berdasarkan analisis rekam medis hidrologi, kawasan ini **memiliki kerentanan GENANGAN yang tinggi** akibat kejenuhan air tanah oleh hujan hari-hari sebelumnya. Walaupun intensitas hujan sesaat fluktuatif, air limpasan baru akan sulit meresap dan mudah tergenang."
-        else:
-            return "🚨 **Kesimpulan Deteksi Genangan:** Berdasarkan hasil deteksi multi-sensor, daerah ini **memiliki potensi GENANGAN yang signifikan** akibat intensitas debit limpasan air (run-off) yang melebihi laju resapan alami permukaan."
-            
+        return (f"🚨 **Kesimpulan Analisis Genangan:**\n\n"
+                f"Berdasarkan kombinasi **{lc_desc}** dan **{topo_desc}**, kawasan ini memiliki **kerentanan genangan yang tinggi**. Kondisi fisik tersebut membuat **{topo_effect}** saat debit air meningkat.")
     elif risk_level == "Sedang":
-        if r_slope < 5:
-            return "⚠️ **Kesimpulan Deteksi Genangan:** Berdasarkan evaluasi parameter, daerah ini **lumayan memiliki potensi GENANGAN tingkat sedang (waspada)**. Faktor utama dipicu oleh kontur lereng yang datar sehingga melambatkan laju drainase gravitasi air saat hujan berdurasi cukup lama."
-        elif r_land == 'Urban' or r_ndvi < 0.3:
-            return "⚠️ **Kesimpulan Deteksi Genangan:** Berdasarkan analisis spasial, kawasan ini **lumayan memiliki potensi GENANGAN setempat** karena terbatasnya area terbuka hijau dan rendahnya vegetasi peresap air. Genangan sesaat dapat terjadi di beberapa titik cekungan atau saluran drainase yang tersumbat."
-        else:
-            return "⚠️ **Kesimpulan Deteksi Genangan:** Berdasarkan pemrosesan model, lokasi ini **lumayan memiliki potensi GENANGAN (tingkat sedang)**. Kombinasi parameter topografi dan kelembapan tanah membuat daerah ini membutuhkan sistem drainase permukaan yang berfungsi optimal."
-            
+        return (f"⚠️ **Kesimpulan Analisis Genangan:**\n\n"
+                f"Kajian parameter mendapati **{lc_desc}** dengan **{topo_desc}**. Kondisi ini menandakan bahwa daerah ini **lumayan memiliki potensi genangan tingkat waspada**; di mana **{topo_effect}**.")
     else:
-        return "✅ **Kesimpulan Deteksi Genangan:** Berdasarkan deteksi parameter saat ini, daerah ini **memiliki potensi GENANGAN yang minim** karena tercapainya keseimbangan antara intensitas curah hujan dengan daya dukung serapan serta drainase lingkungan."
+        return (f"✅ **Kesimpulan Analisis Genangan:**\n\n"
+                f"Berbekal **{lc_desc}** serta **{topo_desc}**, wilayah ini **memiliki potensi genangan yang minim**, dikarenakan **{topo_effect}** serta **{lc_effect}**.")
 
 
 def show_simplified_explanation(raw_data, st):
