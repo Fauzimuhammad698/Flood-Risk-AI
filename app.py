@@ -907,6 +907,43 @@ def get_risk_level(prob):
         return "Tinggi", "high", "🚨", "#ef4444", "red"
 
 
+def generate_inundation_assessment(raw_data, risk_level="Sedang"):
+    """Generate smart domain-specific synthesis focusing on surface inundation (genangan)"""
+    r_slope = raw_data.get('slope', 0)
+    r_land = raw_data.get('land_cover', '')
+    r_ndvi = raw_data.get('ndvi', 0)
+    r_curr = raw_data.get('rainfall_curr', 0)
+    r_3d = raw_data.get('rainfall_3d', 0)
+    r_7d = raw_data.get('rainfall_7d', 0)
+    
+    # Kondisi 1: Risiko Tinggi / Ekstrem (Kombinasi Urban + Hujan atau Lereng Datar + Tanah Jenuh)
+    if risk_level == "Tinggi" or (r_curr > 50 and r_slope < 10) or (r_land == 'Urban' and r_curr > 40):
+        if r_land == 'Urban' and r_slope < 5:
+            return "🚨 **Kesimpulan Deteksi Genangan:** Berdasarkan kombinasi topografi cenderung datar dan dominasi permukaan kedap air (beton/aspal perkotaan), daerah ini **memiliki potensi GENANGAN (surface inundation) yang tinggi**. Minimnya infiltrasi membuat air terakumulasi dengan cepat pada bahu jalan dan daerah cekung saat curah hujan melebihi kapasitas drainase sesaat."
+        elif r_7d > 200 or r_3d > 100:
+            return "🚨 **Kesimpulan Deteksi Genangan:** Berdasarkan analisis rekam medis hidrologi, kawasan ini **memiliki kerentanan GENANGAN yang tinggi** akibat kejenuhan air tanah oleh hujan hari-hari sebelumnya. Walaupun intensitas hujan sesaat fluktuatif, air limpasan baru akan sulit meresap dan mudah tergenang."
+        else:
+            return "🚨 **Kesimpulan Deteksi Genangan:** Berdasarkan hasil deteksi multi-sensor, daerah ini **memiliki potensi GENANGAN yang signifikan** akibat intensitas debit limpasan air (run-off) yang melebihi laju resapan alami permukaan."
+            
+    # Kondisi 2: Risiko Sedang / Waspada ("Lumayan Memiliki Potensi Genangan")
+    elif risk_level == "Sedang" or r_slope < 8 or (r_land in ['Urban', 'Barren'] and r_curr > 10):
+        if r_slope < 5:
+            return "⚠️ **Kesimpulan Deteksi Genangan:** Berdasarkan evaluasi parameter, daerah ini **lumayan memiliki potensi GENANGAN tingkat sedang (waspada)**. Faktor utama dipicu oleh kontur lereng yang datar sehingga melambatkan laju drainase gravitasi air saat hujan berdurasi cukup lama."
+        elif r_land == 'Urban' or r_ndvi < 0.3:
+            return "⚠️ **Kesimpulan Deteksi Genangan:** Berdasarkan analisis spasial, kawasan ini **lumayan memiliki potensi GENANGAN setempat** karena terbatasnya area terbuka hijau dan rendahnya vegetasi peresap air. Genangan sesaat dapat terjadi di beberapa titik cekungan atau saluran drainase yang tersumbat."
+        else:
+            return "⚠️ **Kesimpulan Deteksi Genangan:** Berdasarkan pemrosesan model, lokasi ini **lumayan memiliki potensi GENANGAN (tingkat sedang)**. Kombinasi parameter topografi dan kelembapan tanah membuat daerah ini membutuhkan sistem drainase permukaan yang berfungsi optimal."
+            
+    # Kondisi 3: Risiko Rendah / Aman
+    else:
+        if r_slope >= 15:
+            return "✅ **Kesimpulan Deteksi Genangan:** Berdasarkan analisis spasial, daerah ini **memiliki potensi GENANGAN yang sangat minim**. Kemiringan topografi yang cukup curam mendukung kelancaran aliran drainase secara alami sehingga limpasan permukaan langsung tersalurkan tanpa sempat menggenang."
+        elif r_land == 'Forest' or r_ndvi >= 0.6:
+            return "✅ **Kesimpulan Deteksi Genangan:** Berdasarkan observasi lingkungan, kawasan ini **memiliki potensi GENANGAN yang rendah**. Kerapatan vegetasi dan tutupan ruang terbuka hijau (RTH) yang baik memfasilitasi kapasitas resapan infiltrasi air ke dalam tanah secara maksimal."
+        else:
+            return "✅ **Kesimpulan Deteksi Genangan:** Berdasarkan deteksi parameter saat ini, daerah ini **memiliki potensi GENANGAN yang minim** karena tercapainya keseimbangan antara intensitas curah hujan dengan daya dukung serapan serta drainase lingkungan."
+
+
 def show_simplified_explanation(raw_data, st):
     """Show simplified explanation when SHAP is not available"""
     st.markdown("### 🤖 Analisis AI (Mode Sederhana)")
@@ -953,6 +990,9 @@ def show_simplified_explanation(raw_data, st):
             st.markdown(f"- {exp}")
     else:
         st.markdown("✅ **Kondisi cuaca dan geografis normal**")
+        
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.info(generate_inundation_assessment(raw_data, "Sedang" if raw_data.get('rainfall_curr', 0) > 30 else "Rendah"))
     
     # Recommendations
     st.markdown("\n**💡 Rekomendasi:**")
@@ -1523,6 +1563,9 @@ if analyze_clicked and location_input:
             explanations = generate_ai_explanation(raw_data, risk_level, None)
             for exp in explanations:
                 st.markdown(f"- {exp}")
+                
+            st.markdown("<br>", unsafe_allow_html=True)
+            st.info(generate_inundation_assessment(raw_data, risk_level))
             
             # SHAP Explanation (if available)
             if shap_values is not None and SHAP_AVAILABLE:
