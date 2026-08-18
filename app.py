@@ -243,16 +243,13 @@ st.markdown("""
         background: linear-gradient(135deg, #1b5e20 0%, #1565c0 100%) !important;
         color: white !important;
         border: none !important;
-        border-radius: 14px !important;
+        border-radius: 50px !important;
         font-weight: 700 !important;
         font-size: 0.95rem !important;
-        height: 48px !important;
-        min-height: 48px !important;
-        padding: 0 1.6rem !important;
+        padding: 0.65rem 1.6rem !important;
         box-shadow: 0 6px 24px rgba(21,101,192,0.35) !important;
         transition: all 0.3s ease !important;
         letter-spacing: 0.3px !important;
-        width: 100% !important;
     }
     div[data-testid="stButton"] > button[kind="primary"]:hover {
         transform: translateY(-2px) scale(1.02) !important;
@@ -267,32 +264,16 @@ st.markdown("""
         font-weight: 600 !important;
     }
 
-    /* ===== SEARCH ROW ALIGNMENT ===== */
-    /* Input tinggi sejajar tombol */
-    div[data-testid="stTextInput"] > div {
-        display: flex !important;
-        align-items: center !important;
-    }
-    div[data-testid="stTextInput"] input {
-        height: 48px !important;
-        min-height: 48px !important;
-        line-height: 48px !important;
-    }
-    /* Hapus margin bawah elemen kolom agar sejajar vertikal */
-    div[data-testid="stHorizontalBlock"] > div[data-testid="stColumn"] {
-        display: flex !important;
-        align-items: flex-end !important;
-    }
-    /* Container card pencarian */
-    .search-section {
-        background: rgba(255,255,255,0.92);
-        backdrop-filter: blur(16px);
-        -webkit-backdrop-filter: blur(16px);
-        padding: 1.4rem 1.8rem 1.6rem 1.8rem;
-        border-radius: 20px;
-        border: 1px solid rgba(76,175,80,0.25);
-        box-shadow: 0 8px 32px rgba(13,79,60,0.10), 0 2px 8px rgba(21,101,192,0.07);
-        margin-bottom: 1rem;
+    /* ===== SEARCH CARD (via st.container) ===== */
+    div[data-testid="stVerticalBlockBorderWrapper"] > div {
+        background: rgba(255,255,255,0.92) !important;
+        backdrop-filter: blur(16px) !important;
+        -webkit-backdrop-filter: blur(16px) !important;
+        border-radius: 20px !important;
+        border: 1px solid rgba(76,175,80,0.25) !important;
+        box-shadow: 0 8px 32px rgba(13,79,60,0.10), 0 2px 8px rgba(21,101,192,0.07) !important;
+        padding: 1.4rem 1.6rem 1.2rem 1.6rem !important;
+        margin-bottom: 1rem !important;
     }
 
     /* ===== INPUT FIELD ===== */
@@ -1608,24 +1589,28 @@ else:
     st.warning("⚠️ GEE tidak terhubung - menggunakan data default")
 
 # Search Section
-st.markdown("""
-<div class='search-section'>
-    <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.9rem;">
-        <div style="width:5px; height:26px; background:linear-gradient(180deg,#2e7d32,#1565c0); border-radius:4px;"></div>
-        <span style="font-size:1rem; font-weight:700; color:#0d4f3c; letter-spacing:0.2px;">📍 Cari Lokasi</span>
+with st.container(border=False):
+    st.markdown("""
+    <div style="background:rgba(255,255,255,0.92); backdrop-filter:blur(16px);
+                border-radius:20px; border:1px solid rgba(76,175,80,0.25);
+                box-shadow:0 8px 32px rgba(13,79,60,0.10), 0 2px 8px rgba(21,101,192,0.07);
+                padding:1.4rem 1.8rem 1.6rem 1.8rem; margin-bottom:1rem;">
+        <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.85rem;">
+            <div style="width:5px; height:26px; background:linear-gradient(180deg,#2e7d32,#1565c0); border-radius:4px;"></div>
+            <span style="font-size:1rem; font-weight:700; color:#0d4f3c; letter-spacing:0.2px;">📍 Cari Lokasi</span>
+        </div>
     </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
 
-col1, col2 = st.columns([4, 1])
-with col1:
-    location_input = st.text_input(
-        "Masukkan nama kota/daerah:",
-        placeholder="Contoh: Jakarta, Bandung, Surabaya, Yogyakarta...",
-        label_visibility="collapsed"
-    )
-with col2:
-    analyze_clicked = st.button("🔍 Analisis Risiko", use_container_width=True, type="primary")
+    col1, col2 = st.columns([4, 1])
+    with col1:
+        location_input = st.text_input(
+            "Masukkan nama kota/daerah:",
+            placeholder="Contoh: Jakarta, Bandung, Surabaya, Yogyakarta...",
+            label_visibility="collapsed"
+        )
+    with col2:
+        analyze_clicked = st.button("🔍 Analisis Risiko", use_container_width=True, type="primary")
 
 # Analysis Results
 if analyze_clicked and location_input:
