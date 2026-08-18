@@ -50,109 +50,277 @@ st.set_page_config(
 # --- CSS STYLING ---
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap');
-    
-    * { font-family: 'Inter', sans-serif; }
-    
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+    /* ===== BASE ===== */
+    * { font-family: 'Plus Jakarta Sans', sans-serif; box-sizing: border-box; }
+
+    /* Background gradient halaman */
+    .stApp {
+        background: linear-gradient(160deg, #e8f5e9 0%, #e3f2fd 40%, #f0f9ff 70%, #e8f5e9 100%) !important;
+        background-attachment: fixed !important;
+    }
+
+    /* Sembunyikan header default streamlit */
+    header[data-testid="stHeader"] { background: transparent !important; }
+
+    /* ===== HEADER UTAMA ===== */
     .main-header {
-        background: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
-        padding: 2.5rem 2rem;
-        border-radius: 20px;
+        background: linear-gradient(135deg, #0d4f3c 0%, #1a7a5e 35%, #1565c0 80%, #0d47a1 100%);
+        padding: 3rem 2.5rem;
+        border-radius: 24px;
         text-align: center;
         color: white;
-        margin-bottom: 2rem;
-        box-shadow: 0 10px 40px rgba(30, 58, 138, 0.3);
+        margin-bottom: 1.5rem;
+        box-shadow: 0 20px 60px rgba(13, 79, 60, 0.35), 0 8px 25px rgba(21, 101, 192, 0.2);
+        position: relative;
+        overflow: hidden;
     }
+    .main-header::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: radial-gradient(ellipse at center, rgba(255,255,255,0.06) 0%, transparent 60%);
+        animation: shimmer 6s ease-in-out infinite;
+    }
+    .main-header::after {
+        content: '';
+        position: absolute;
+        bottom: 0; left: 0; right: 0;
+        height: 3px;
+        background: linear-gradient(90deg, #4caf50, #2196f3, #4caf50);
+        background-size: 200%;
+        animation: borderFlow 3s linear infinite;
+    }
+    @keyframes shimmer { 0%,100%{transform:translate(-30%,-30%) rotate(0deg)} 50%{transform:translate(-30%,-30%) rotate(180deg)} }
+    @keyframes borderFlow { 0%{background-position:0%} 100%{background-position:200%} }
+
     .main-header h1 {
-        font-size: 2.5rem;
+        font-size: 2.6rem;
         font-weight: 800;
         margin-bottom: 0.5rem;
+        letter-spacing: -0.5px;
+        text-shadow: 0 2px 12px rgba(0,0,0,0.3);
     }
     .main-header p {
-        font-size: 1.1rem;
-        opacity: 0.9;
+        font-size: 1.05rem;
+        opacity: 0.88;
+        font-weight: 400;
     }
-    
+
+    /* ===== GLASS CARDS ===== */
     .search-card {
-        background: white;
+        background: rgba(255,255,255,0.82);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         padding: 2rem;
         border-radius: 20px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
-        margin-bottom: 2rem;
+        border: 1px solid rgba(255,255,255,0.7);
+        box-shadow: 0 8px 32px rgba(13,79,60,0.10), 0 2px 8px rgba(21,101,192,0.07);
+        margin-bottom: 1.5rem;
+        transition: box-shadow 0.3s ease;
     }
-    
+    .search-card:hover {
+        box-shadow: 0 16px 48px rgba(13,79,60,0.15), 0 4px 16px rgba(21,101,192,0.10);
+    }
+
     .result-card {
-        background: white;
+        background: rgba(255,255,255,0.88);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
         padding: 2rem;
         border-radius: 20px;
-        box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+        border: 1px solid rgba(76,175,80,0.20);
+        box-shadow: 0 8px 32px rgba(13,79,60,0.10);
         margin-bottom: 1rem;
     }
-    
-    .risk-badge {
-        display: inline-block;
-        padding: 0.75rem 2rem;
-        border-radius: 50px;
-        font-weight: 700;
-        font-size: 1.5rem;
-        text-align: center;
-    }
-    .risk-low { background: linear-gradient(135deg, #84fab0 0%, #8fd3f4 100%); color: #065f46; }
-    .risk-medium { background: linear-gradient(135deg, #fee140 0%, #fa709a 100%); color: #92400e; }
-    .risk-high { background: linear-gradient(135deg, #ff0844 0%, #ffb199 100%); color: white; }
-    
-    .metric-card {
-        background: #f8fafc;
-        padding: 1.5rem;
-        border-radius: 15px;
-        text-align: center;
-        border: 1px solid #e2e8f0;
-        transition: transform 0.3s ease;
-    }
-    .metric-card:hover { transform: translateY(-5px); box-shadow: 0 8px 25px rgba(0,0,0,0.1); }
-    .metric-value { font-size: 1.8rem; font-weight: 700; color: #1e293b; }
-    .metric-label { font-size: 0.9rem; color: #64748b; margin-top: 0.5rem; }
-    
-    .analyze-btn {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        padding: 1rem 3rem;
-        border-radius: 50px;
-        font-weight: 600;
-        font-size: 1.1rem;
-        border: none;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        width: 100%;
-    }
-    .analyze-btn:hover { transform: scale(1.02); box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4); }
-    
+
     .explanation-card {
-        background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
-        padding: 1.5rem;
-        border-radius: 15px;
+        background: linear-gradient(135deg, rgba(232,245,233,0.90) 0%, rgba(227,242,253,0.90) 100%);
+        backdrop-filter: blur(12px);
+        padding: 1.8rem;
+        border-radius: 18px;
+        border: 1px solid rgba(76,175,80,0.25);
+        box-shadow: 0 4px 20px rgba(13,79,60,0.08);
         margin-top: 1rem;
     }
-    
+
+    /* ===== RISK BADGE ===== */
+    .risk-badge {
+        display: inline-block;
+        padding: 0.8rem 2.2rem;
+        border-radius: 50px;
+        font-weight: 800;
+        font-size: 1.5rem;
+        text-align: center;
+        letter-spacing: 0.5px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+    }
+    .risk-low {
+        background: linear-gradient(135deg, #43a047 0%, #1976d2 100%);
+        color: white;
+        box-shadow: 0 6px 24px rgba(67,160,71,0.40);
+    }
+    .risk-medium {
+        background: linear-gradient(135deg, #fb8c00 0%, #f9a825 100%);
+        color: white;
+        box-shadow: 0 6px 24px rgba(251,140,0,0.40);
+    }
+    .risk-high {
+        background: linear-gradient(135deg, #c62828 0%, #e53935 100%);
+        color: white;
+        box-shadow: 0 6px 24px rgba(198,40,40,0.40);
+    }
+
+    /* ===== METRIC CARDS ===== */
+    .metric-card {
+        background: rgba(255,255,255,0.80);
+        backdrop-filter: blur(10px);
+        padding: 1.4rem;
+        border-radius: 16px;
+        text-align: center;
+        border: 1px solid rgba(76,175,80,0.18);
+        box-shadow: 0 4px 16px rgba(13,79,60,0.08);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .metric-card:hover {
+        transform: translateY(-6px);
+        box-shadow: 0 12px 32px rgba(13,79,60,0.15);
+    }
+    .metric-value { font-size: 1.8rem; font-weight: 700; color: #0d4f3c; }
+    .metric-label { font-size: 0.85rem; color: #2e7d32; margin-top: 0.4rem; font-weight: 500; }
+
+    /* ===== TOMBOL ANALISIS ===== */
+    div[data-testid="stButton"] > button[kind="primary"] {
+        background: linear-gradient(135deg, #1b5e20 0%, #1565c0 100%) !important;
+        color: white !important;
+        border: none !important;
+        border-radius: 50px !important;
+        font-weight: 700 !important;
+        font-size: 1rem !important;
+        padding: 0.65rem 1.8rem !important;
+        box-shadow: 0 6px 24px rgba(21,101,192,0.35) !important;
+        transition: all 0.3s ease !important;
+        letter-spacing: 0.3px !important;
+    }
+    div[data-testid="stButton"] > button[kind="primary"]:hover {
+        transform: translateY(-2px) scale(1.02) !important;
+        box-shadow: 0 10px 32px rgba(21,101,192,0.50) !important;
+    }
+
+    /* ===== INPUT FIELD ===== */
+    div[data-testid="stTextInput"] input {
+        border-radius: 50px !important;
+        border: 2px solid rgba(76,175,80,0.35) !important;
+        background: rgba(255,255,255,0.90) !important;
+        padding: 0.65rem 1.4rem !important;
+        font-size: 1rem !important;
+        transition: border-color 0.3s, box-shadow 0.3s !important;
+    }
+    div[data-testid="stTextInput"] input:focus {
+        border-color: #1565c0 !important;
+        box-shadow: 0 0 0 3px rgba(21,101,192,0.18) !important;
+    }
+
+    /* ===== TABS ===== */
+    div[data-testid="stTabs"] button[data-baseweb="tab"] {
+        font-weight: 600 !important;
+        color: #2e7d32 !important;
+        border-radius: 12px 12px 0 0 !important;
+        transition: all 0.2s ease !important;
+    }
+    div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
+        background: linear-gradient(135deg, #e8f5e9 0%, #e3f2fd 100%) !important;
+        color: #1565c0 !important;
+        border-bottom: 3px solid #1565c0 !important;
+    }
+
+    /* ===== PROGRESS BAR ===== */
+    div[data-testid="stProgress"] > div > div {
+        background: linear-gradient(90deg, #43a047, #1976d2) !important;
+        border-radius: 10px !important;
+    }
+
+    /* ===== INFO / ALERT BOXES ===== */
+    div[data-testid="stInfo"] {
+        background: rgba(227,242,253,0.75) !important;
+        border-left: 4px solid #1565c0 !important;
+        border-radius: 12px !important;
+        backdrop-filter: blur(8px) !important;
+    }
+    div[data-testid="stWarning"] {
+        background: rgba(255,243,224,0.75) !important;
+        border-left: 4px solid #fb8c00 !important;
+        border-radius: 12px !important;
+    }
+    div[data-testid="stSuccess"] {
+        background: rgba(232,245,233,0.85) !important;
+        border-left: 4px solid #43a047 !important;
+        border-radius: 12px !important;
+    }
+    div[data-testid="stError"] {
+        background: rgba(255,235,238,0.85) !important;
+        border-left: 4px solid #c62828 !important;
+        border-radius: 12px !important;
+    }
+
+    /* ===== DATAFRAME / TABLE ===== */
+    div[data-testid="stDataFrame"] {
+        border-radius: 14px !important;
+        overflow: hidden !important;
+        border: 1px solid rgba(76,175,80,0.20) !important;
+        box-shadow: 0 4px 16px rgba(13,79,60,0.06) !important;
+    }
+
+    /* ===== SIDEBAR TOMBOL COLLAPSE ===== */
+    section[data-testid="collapsedControl"] {
+        background: rgba(255,255,255,0.85) !important;
+        border-radius: 0 16px 16px 0 !important;
+    }
+
+    /* ===== SPINNER ===== */
+    div[data-testid="stSpinner"] {
+        color: #1565c0 !important;
+    }
+
+    /* ===== SCROLLBAR ===== */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #e8f5e9; }
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(180deg, #43a047, #1976d2);
+        border-radius: 10px;
+    }
+
+    /* ===== FOOTER ===== */
     .footer {
         text-align: center;
-        padding: 2rem;
-        color: #64748b;
+        padding: 2.5rem;
+        color: #2e7d32;
         font-size: 0.9rem;
+        border-top: 1px solid rgba(76,175,80,0.20);
+        margin-top: 2rem;
+        background: linear-gradient(135deg, rgba(232,245,233,0.6) 0%, rgba(227,242,253,0.6) 100%);
+        border-radius: 20px;
+        backdrop-filter: blur(8px);
     }
-    
-    /* Mobile Responsive Text Styles Only */
+
+    /* ===== MOBILE RESPONSIVE ===== */
     @media (max-width: 768px) {
-        .main-header h1 {
-            font-size: 1.5rem !important;
-        }
-        .main-header p {
-            font-size: 0.9rem !important;
-        }
-        .risk-badge {
-            font-size: 1.2rem !important;
-            padding: 0.5rem 1.5rem !important;
-        }
+        .main-header h1 { font-size: 1.6rem !important; }
+        .main-header p { font-size: 0.9rem !important; }
+        .risk-badge { font-size: 1.1rem !important; padding: 0.6rem 1.5rem !important; }
+    }
+
+    /* ===== ANIMASI FADE IN ===== */
+    @keyframes fadeInUp {
+        from { opacity: 0; transform: translateY(20px); }
+        to   { opacity: 1; transform: translateY(0); }
+    }
+    .result-card, .search-card, .explanation-card {
+        animation: fadeInUp 0.5s ease both;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -1292,26 +1460,36 @@ def load_historical_data():
 current_time_str = format_waktu_indonesia(datetime.now())
 
 st.markdown(f"""
-<div style="text-align: center; background: linear-gradient(90deg, #667eea, #764ba2); 
-            padding: 10px 20px; border-radius: 25px; margin-bottom: 15px;">
-    <span style="color: white; font-size: 1rem; font-weight: 600;">🕐 {current_time_str}</span>
+<div style="text-align: center;
+            background: linear-gradient(90deg, rgba(13,79,60,0.85) 0%, rgba(21,101,192,0.85) 100%);
+            padding: 10px 24px; border-radius: 30px; margin-bottom: 14px;
+            box-shadow: 0 4px 16px rgba(13,79,60,0.18);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.25);">
+    <span style="color: white; font-size: 0.95rem; font-weight: 600; letter-spacing: 0.3px;">🕐 {current_time_str}</span>
 </div>
 """, unsafe_allow_html=True)
 
 st.markdown("""
 <div class="main-header">
-    <h1>🌊 SISTEM DETEKSI GENANGAN AI</h1>
+    <div style="font-size: 3rem; margin-bottom: 0.6rem; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));">🌊</div>
+    <h1>SISTEM DETEKSI GENANGAN AI</h1>
+    <p>Prediksi Risiko Banjir Real-time &bull; Didukung Google Earth Engine &amp; BMKG</p>
 </div>
 """, unsafe_allow_html=True)
 
 # Model Info Banner
 st.markdown("""
-<div style="background: linear-gradient(90deg, #10b981, #059669); 
-            padding: 12px 20px; border-radius: 12px; margin-bottom: 20px;">
-    <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
-        <span style="font-size: 1.5rem;">🧠</span>
+<div style="background: linear-gradient(135deg, rgba(27,94,32,0.90) 0%, rgba(21,101,192,0.90) 100%);
+            padding: 13px 24px; border-radius: 16px; margin-bottom: 16px;
+            border: 1px solid rgba(255,255,255,0.20);
+            box-shadow: 0 6px 24px rgba(13,79,60,0.20);
+            backdrop-filter: blur(10px);">
+    <div style="display: flex; align-items: center; justify-content: center; gap: 12px;">
+        <span style="font-size: 1.6rem;">🧠</span>
         <div style="text-align: center;">
-            <span style="color: white; font-weight: 700; font-size: 1rem;">Model Hybrid</span>
+            <span style="color: white; font-weight: 700; font-size: 1rem; letter-spacing: 0.3px;">Model Hybrid AI</span>
+            <span style="color: rgba(255,255,255,0.75); font-size: 0.82rem; margin-left: 10px;">| Flood Risk Prediction Engine v2.0</span>
         </div>
     </div>
 </div>
@@ -1320,11 +1498,16 @@ st.markdown("""
 # GEE Status
 if GEE_ENABLED:
     st.markdown("""
-    <div style="background: linear-gradient(90deg, #3b82f6, #1d4ed8); 
-                padding: 8px 15px; border-radius: 8px; margin-bottom: 15px;">
-        <div style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-            <span style="font-size: 1.2rem;">🛰️</span>
-            <span style="color: white; font-weight: 600; font-size: 0.9rem;">Google Earth Engine: TERHUBUNG (Slope & NDVI Real-time)</span>
+    <div style="background: linear-gradient(135deg, rgba(13,71,161,0.88) 0%, rgba(25,118,210,0.88) 100%);
+                padding: 10px 20px; border-radius: 14px; margin-bottom: 14px;
+                border: 1px solid rgba(255,255,255,0.22);
+                box-shadow: 0 4px 16px rgba(21,101,192,0.22);
+                backdrop-filter: blur(10px);">
+        <div style="display: flex; align-items: center; justify-content: center; gap: 10px;">
+            <span style="font-size: 1.25rem;">🛰️</span>
+            <span style="color: white; font-weight: 600; font-size: 0.9rem; letter-spacing: 0.2px;">
+                Google Earth Engine: <span style="color: #a5d6a7;">● TERHUBUNG</span> &nbsp;|&nbsp; Slope &amp; NDVI Real-time
+            </span>
         </div>
     </div>
     """, unsafe_allow_html=True)
@@ -1332,8 +1515,13 @@ else:
     st.warning("⚠️ GEE tidak terhubung - menggunakan data default")
 
 # Search Section
-st.markdown("<div class='search-card'>", unsafe_allow_html=True)
-st.markdown("### 📍 Cari Lokasi")
+st.markdown("""
+<div class='search-card'>
+    <div style="display:flex; align-items:center; gap:10px; margin-bottom:1rem;">
+        <div style="width:5px; height:28px; background:linear-gradient(180deg,#43a047,#1976d2); border-radius:4px;"></div>
+        <span style="font-size:1.1rem; font-weight:700; color:#0d4f3c;">📍 Cari Lokasi</span>
+    </div>
+""", unsafe_allow_html=True)
 
 col1, col2 = st.columns([3, 1])
 with col1:
@@ -1357,20 +1545,28 @@ if analyze_clicked and location_input:
         loading_container = st.empty()
         
         loading_html = """
-        <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; margin: 1rem 0;">
-            <div style="font-size: 3rem; animation: pulse 1.5s infinite;">🌊</div>
-            <h3 style="color: white; margin: 1rem 0;">Menganalisis Risiko Banjir...</h3>
-            <div style="width: 80%; height: 8px; background: rgba(255,255,255,0.3); border-radius: 10px; margin: 1rem auto; overflow: hidden;">
-                <div id="loading-bar" style="width: 0%; height: 100%; background: white; border-radius: 10px; transition: width 0.3s ease;"></div>
+        <div style="text-align: center; padding: 2.5rem 2rem;
+                    background: linear-gradient(135deg, #0d4f3c 0%, #1a7a5e 40%, #1565c0 100%);
+                    border-radius: 24px; margin: 1rem 0;
+                    box-shadow: 0 20px 60px rgba(13,79,60,0.35);
+                    border: 1px solid rgba(255,255,255,0.15);">
+            <div style="font-size: 3.5rem; animation: wavePulse 1.8s ease-in-out infinite;">🌊</div>
+            <h3 style="color: white; margin: 1rem 0; font-weight: 700; letter-spacing: -0.3px;">Menganalisis Risiko Banjir...</h3>
+            <div style="width: 75%; height: 8px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: 1rem auto; overflow: hidden;">
+                <div style="width: 5%; height: 100%;
+                            background: linear-gradient(90deg, #a5d6a7, #64b5f6);
+                            border-radius: 10px;
+                            animation: loadingBar 2s ease-in-out infinite;"></div>
             </div>
-            <p id="loading-status" style="color: rgba(255,255,255,0.9); font-size: 0.9rem; margin-top: 0.5rem;">🛰️ Mengambil data spasial...</p>
+            <p style="color: rgba(255,255,255,0.85); font-size: 0.9rem; margin-top: 0.6rem;">🛰️ Menghubungi Google Earth Engine...</p>
         </div>
         <style>
-            @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+            @keyframes wavePulse { 0%,100%{transform:scale(1) rotate(-5deg)} 50%{transform:scale(1.15) rotate(5deg)} }
+            @keyframes loadingBar { 0%{width:0%;margin-left:0%} 50%{width:60%;margin-left:20%} 100%{width:0%;margin-left:100%} }
         </style>
         """
         loading_container.markdown(loading_html, unsafe_allow_html=True)
-        
+
         # Simulate animated steps
         steps = [
             ("🛰️ Mengambil data GEE (Slope & NDVI)...", 0.2),
@@ -1379,18 +1575,24 @@ if analyze_clicked and location_input:
             ("📊 Analisis risiko & generate peta...", 0.8),
             ("✅ Finalisasi hasil prediksi...", 1.0)
         ]
-        
+
         for status, progress in steps:
             loading_container.markdown(f"""
-            <div style="text-align: center; padding: 2rem; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 20px; margin: 1rem 0;">
-                <div style="font-size: 3rem; animation: pulse 1.5s infinite;">🌊</div>
-                <h3 style="color: white; margin: 1rem 0;">Menganalisis Risiko Banjir...</h3>
-                <div style="width: 80%; height: 8px; background: rgba(255,255,255,0.3); border-radius: 10px; margin: 1rem auto; overflow: hidden;">
-                    <div style="width: {progress*100}%; height: 100%; background: white; border-radius: 10px; transition: width 0.5s ease;"></div>
+            <div style="text-align: center; padding: 2.5rem 2rem;
+                        background: linear-gradient(135deg, #0d4f3c 0%, #1a7a5e 40%, #1565c0 100%);
+                        border-radius: 24px; margin: 1rem 0;
+                        box-shadow: 0 20px 60px rgba(13,79,60,0.35);
+                        border: 1px solid rgba(255,255,255,0.15);">
+                <div style="font-size: 3.5rem; animation: wavePulse 1.8s ease-in-out infinite;">🌊</div>
+                <h3 style="color: white; margin: 1rem 0; font-weight: 700;">Menganalisis Risiko Banjir...</h3>
+                <div style="width: 75%; height: 8px; background: rgba(255,255,255,0.2); border-radius: 10px; margin: 1rem auto; overflow: hidden;">
+                    <div style="width: {progress*100}%; height: 100%;
+                                background: linear-gradient(90deg, #a5d6a7, #64b5f6);
+                                border-radius: 10px; transition: width 0.5s ease;"></div>
                 </div>
-                <p style="color: rgba(255,255,255,0.9); font-size: 0.9rem; margin-top: 0.5rem;">{status}</p>
+                <p style="color: rgba(255,255,255,0.85); font-size: 0.9rem; margin-top: 0.6rem;">{status}</p>
             </div>
-            <style>@keyframes pulse {{ 0%, 100% {{ transform: scale(1); }} 50% {{ transform: scale(1.1); }} }}</style>
+            <style>@keyframes wavePulse {{ 0%,100%{{transform:scale(1) rotate(-5deg)}} 50%{{transform:scale(1.15) rotate(5deg)}} }}</style>
             """, unsafe_allow_html=True)
             time.sleep(0.4)
         
@@ -1447,7 +1649,12 @@ if analyze_clicked and location_input:
         st.markdown("</div>", unsafe_allow_html=True)
         
         # --- METRICS GRID ---
-        st.markdown("<h3 style='margin-top: 2rem;'>📊 Data Lingkungan Real-time</h3>", unsafe_allow_html=True)
+        st.markdown("""
+        <div style="display:flex; align-items:center; gap:10px; margin-top:2rem; margin-bottom:0.5rem;">
+            <div style="width:5px; height:28px; background:linear-gradient(180deg,#43a047,#1976d2); border-radius:4px;"></div>
+            <h3 style="margin:0; color:#0d4f3c; font-weight:700;">📊 Data Lingkungan Real-time</h3>
+        </div>
+        """, unsafe_allow_html=True)
         
         cols = st.columns(4)
         metrics = [
@@ -1703,8 +1910,16 @@ if analyze_clicked and location_input:
 # Footer
 st.markdown("""
 <div class="footer">
-    <p>🌊 Flood Risk AI v2.0 | Integrasi BMKG, GEE, Open-Meteo & Hybrid Scorer</p>
-    <p style="font-size: 0.8rem; margin-top: 0.5rem;">Data cuaca real-time dari BMKG/Open-Meteo | Data spasial dari Google Earth Engine</p>
-    <p style="font-size: 0.75rem; margin-top: 0.5rem; color: #94a3b8;">Dibuat oleh Fauzi Muhammad</p>
+    <div style="display:flex; justify-content:center; gap:8px; margin-bottom:0.8rem;">
+        <span style="font-size:1.5rem;">🌊</span>
+        <span style="font-size:1.5rem;">🛰️</span>
+        <span style="font-size:1.5rem;">🧠</span>
+    </div>
+    <p style="font-weight:700; color:#0d4f3c; font-size:1rem;">Flood Risk AI v2.0</p>
+    <p style="font-size:0.82rem; margin-top:0.4rem; color:#1565c0;">
+        Integrasi BMKG &bull; Google Earth Engine &bull; Open-Meteo &bull; Hybrid Scorer
+    </p>
+    <p style="font-size:0.75rem; margin-top:0.4rem; color:#2e7d32;">Data cuaca real-time dari BMKG/Open-Meteo | Data spasial dari Google Earth Engine</p>
+    <p style="font-size:0.72rem; margin-top:0.6rem; color:#64748b;">✨ Dibuat oleh <strong>Fauzi Muhammad</strong></p>
 </div>
 """, unsafe_allow_html=True)
