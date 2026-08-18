@@ -238,42 +238,48 @@ st.markdown("""
         color: white !important; box-shadow: 0 6px 24px rgba(183,28,28,0.45);
     }
 
-    /* ===== TOMBOL ANALISIS ===== */
+    /* ===== TOMBOL ANALISIS (COMPACT) ===== */
     div[data-testid="stButton"] > button[kind="primary"] {
         background: linear-gradient(135deg, #1b5e20 0%, #1565c0 100%) !important;
         color: white !important;
         border: none !important;
-        border-radius: 50px !important;
+        border-radius: 10px !important;
         font-weight: 700 !important;
-        font-size: 0.95rem !important;
-        padding: 0.65rem 1.6rem !important;
-        box-shadow: 0 6px 24px rgba(21,101,192,0.35) !important;
-        transition: all 0.3s ease !important;
-        letter-spacing: 0.3px !important;
+        font-size: 0.88rem !important;
+        padding: 0.5rem 1.2rem !important;
+        box-shadow: 0 4px 16px rgba(21,101,192,0.30) !important;
+        transition: all 0.25s ease !important;
+        letter-spacing: 0.2px !important;
+        white-space: nowrap !important;
+        width: auto !important;
     }
     div[data-testid="stButton"] > button[kind="primary"]:hover {
-        transform: translateY(-2px) scale(1.02) !important;
-        box-shadow: 0 10px 32px rgba(21,101,192,0.52) !important;
+        transform: translateY(-1px) !important;
+        box-shadow: 0 8px 24px rgba(21,101,192,0.45) !important;
         filter: brightness(1.08) !important;
     }
     div[data-testid="stButton"] > button:not([kind="primary"]) {
         background: rgba(255,255,255,0.85) !important;
         color: #0d4f3c !important;
         border: 1.5px solid rgba(76,175,80,0.40) !important;
-        border-radius: 12px !important;
+        border-radius: 10px !important;
         font-weight: 600 !important;
     }
 
-    /* ===== SEARCH CARD (via st.container) ===== */
-    div[data-testid="stVerticalBlockBorderWrapper"] > div {
-        background: rgba(255,255,255,0.92) !important;
-        backdrop-filter: blur(16px) !important;
-        -webkit-backdrop-filter: blur(16px) !important;
-        border-radius: 20px !important;
-        border: 1px solid rgba(76,175,80,0.25) !important;
-        box-shadow: 0 8px 32px rgba(13,79,60,0.10), 0 2px 8px rgba(21,101,192,0.07) !important;
-        padding: 1.4rem 1.6rem 1.2rem 1.6rem !important;
-        margin-bottom: 1rem !important;
+    /* ===== SEARCH CARD — satu card menyatu ===== */
+    .search-wrapper {
+        background: rgba(255,255,255,0.92);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border-radius: 18px;
+        border: 1px solid rgba(76,175,80,0.25);
+        box-shadow: 0 6px 28px rgba(13,79,60,0.10), 0 2px 8px rgba(21,101,192,0.07);
+        padding: 1.2rem 1.6rem 1.3rem 1.6rem;
+        margin-bottom: 1.2rem;
+    }
+    /* Hapus padding default streamlit di dalam search wrapper */
+    .search-wrapper div[data-testid="stVerticalBlock"] {
+        gap: 0.4rem !important;
     }
 
     /* ===== INPUT FIELD ===== */
@@ -1589,28 +1595,26 @@ else:
     st.warning("⚠️ GEE tidak terhubung - menggunakan data default")
 
 # Search Section
-with st.container(border=False):
-    st.markdown("""
-    <div style="background:rgba(255,255,255,0.92); backdrop-filter:blur(16px);
-                border-radius:20px; border:1px solid rgba(76,175,80,0.25);
-                box-shadow:0 8px 32px rgba(13,79,60,0.10), 0 2px 8px rgba(21,101,192,0.07);
-                padding:1.4rem 1.8rem 1.6rem 1.8rem; margin-bottom:1rem;">
-        <div style="display:flex; align-items:center; gap:10px; margin-bottom:0.85rem;">
-            <div style="width:5px; height:26px; background:linear-gradient(180deg,#2e7d32,#1565c0); border-radius:4px;"></div>
-            <span style="font-size:1rem; font-weight:700; color:#0d4f3c; letter-spacing:0.2px;">📍 Cari Lokasi</span>
-        </div>
+st.markdown("""
+<div class="search-wrapper">
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:0.8rem;">
+        <div style="width:4px; height:22px; background:linear-gradient(180deg,#2e7d32,#1565c0); border-radius:4px; flex-shrink:0;"></div>
+        <span style="font-size:0.95rem; font-weight:700; color:#0d4f3c;">📍 Cari Lokasi</span>
     </div>
-    """, unsafe_allow_html=True)
+</div>
+""", unsafe_allow_html=True)
 
-    col1, col2 = st.columns([4, 1])
-    with col1:
-        location_input = st.text_input(
-            "Masukkan nama kota/daerah:",
-            placeholder="Contoh: Jakarta, Bandung, Surabaya, Yogyakarta...",
-            label_visibility="collapsed"
-        )
-    with col2:
-        analyze_clicked = st.button("🔍 Analisis Risiko", use_container_width=True, type="primary")
+col1, col2 = st.columns([5, 1])
+with col1:
+    location_input = st.text_input(
+        "Masukkan nama kota/daerah:",
+        placeholder="Contoh: Jakarta, Bandung, Surabaya, Yogyakarta...",
+        label_visibility="collapsed"
+    )
+with col2:
+    st.markdown("<div style='padding-top:0.35rem'>", unsafe_allow_html=True)
+    analyze_clicked = st.button("🔍 Analisis", type="primary")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # Analysis Results
 if analyze_clicked and location_input:
