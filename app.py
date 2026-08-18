@@ -1535,8 +1535,8 @@ st.markdown(f"""
 st.markdown("""
 <div class="main-header">
     <div style="font-size: 3rem; margin-bottom: 0.6rem; filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));">🌊</div>
-    <h1>SISTEM DETEKSI GENANGAN AI</h1>
-    <p>Prediksi Risiko Banjir Real-time &bull; Didukung Google Earth Engine &amp; BMKG</p>
+    <h1>GENANGAN AI</h1>
+    <p>REAL TIME PREDICTION</p>
 </div>
 """, unsafe_allow_html=True)
 
